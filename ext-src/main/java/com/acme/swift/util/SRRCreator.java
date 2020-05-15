@@ -43,5 +43,9 @@ public class SRRCreator {
 	return success;
 	}
 	
-
+private String getRequestType () {
+	
+	return "";
+	
+}
 }

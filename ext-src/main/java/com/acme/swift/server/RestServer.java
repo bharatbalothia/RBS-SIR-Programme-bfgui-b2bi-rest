@@ -3,6 +3,8 @@ package com.acme.swift.server;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
+import java.util.logging.Logger;
 
 import javax.validation.Valid;
 import javax.validation.Validation;
@@ -18,16 +20,18 @@ import javax.ws.rs.core.Response;
 import org.codehaus.jackson.map.ObjectMapper;
 
 import com.acme.swift.domain.RoutingRule;
+import com.acme.swift.util.Utils;
 import com.acme.swift.domain.Error;
 import com.acme.swift.domain.Errors;
 
-@Path("/")
-public class RestServer {
+@Path("/rules")
+public class RestServer extends BaseRestServer{
 
 	private static List<RoutingRule> rules = new ArrayList<RoutingRule>();
+	
+	private static Logger LOGGER = Logger.getLogger(RestServer.class.getName());
 
 	@GET
-	@Path("/rules")
 	@Produces(MediaType.APPLICATION_JSON)
 	public List<RoutingRule> getRules() {
 
@@ -36,7 +40,6 @@ public class RestServer {
 	//comment
 
 	@POST
-	@Path("/rules")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces({"application/json"})
 	public Response postRuleRecord(RoutingRule rule) {
@@ -49,14 +52,7 @@ public class RestServer {
 
 		final Errors list = new Errors();
 		final List<Error> errs = new ArrayList<Error>();
-		validator.validate(rule).stream().forEach(violation -> {
-
-			String message = violation.getMessage();
-			Error e = new Error();
-			e.setAttribute(violation.getPropertyPath().toString());
-			e.setMessage(message);
-			errs.add(e);
-		});
+		validatePost(validator, errs, rule);
 
 		// do we have any errors?
 		if (errs.size() > 0) {
@@ -73,10 +69,24 @@ public class RestServer {
 		} else {
 			status = validationFailureSC;
 			Error[] ar = errs.toArray(new Error[list.size()]);
-			
+//			
 			return Response.status(status).entity(toErrorResp(list)).build();
 		}
 
+	}
+	
+	private List<Error> validatePost(Validator val, List<Error> errs, RoutingRule rule){
+		
+		val.validate(rule).stream().forEach(violation -> {
+
+			String message = violation.getMessage();
+			Error e = new Error();
+			e.setAttribute(violation.getPropertyPath().toString());
+			e.setMessage(message);
+			errs.add(e);
+		});
+		
+		return errs;
 	}
 
 	private String toErrorResp(Errors list) {
