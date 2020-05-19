@@ -1,4 +1,4 @@
-package com.acme.swift.util;
+package com.stercomm.customers.rbs.sir.rest.util;
 
 
 /**

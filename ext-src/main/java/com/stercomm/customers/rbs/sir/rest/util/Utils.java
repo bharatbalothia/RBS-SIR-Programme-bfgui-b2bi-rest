@@ -30,7 +30,7 @@
 * Revision:   $Revision: $
 * Date/time:  $Date: $
 **********************************************************************/
-package com.acme.swift.util;
+package com.stercomm.customers.rbs.sir.rest.util;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;

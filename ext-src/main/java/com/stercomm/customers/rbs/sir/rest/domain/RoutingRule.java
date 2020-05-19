@@ -1,4 +1,4 @@
-package com.acme.swift.domain;
+package com.stercomm.customers.rbs.sir.rest.domain;
 
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
@@ -120,5 +120,14 @@ public class RoutingRule {
 	@Min(value = 0L,	message="Field value must be 0 or 1")
 	@Max(value = 1L, message="Field value must be 0 or 1")
 	private int priority;
+	
+	private boolean forReal=false;
+
+	public boolean isForReal() {
+		return forReal;
+	}
+	public void setForReal(boolean forReal) {
+		this.forReal = forReal;
+	}
 
 }

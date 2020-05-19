@@ -1,4 +1,4 @@
-package com.acme.swift.server;
+package com.stercomm.customers.rbs.sir.rest.server;
 
 import java.io.IOException;
 import java.util.Properties;
@@ -11,7 +11,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 @Path("/properties")
-public class PropertiesRestServer extends BaseRestServer {
+public class PropertiesRestServer{
 
 	private static Logger LOGGER = Logger.getLogger(PropertiesRestServer.class.getName());
 

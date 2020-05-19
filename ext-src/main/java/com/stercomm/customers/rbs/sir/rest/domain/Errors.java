@@ -1,4 +1,4 @@
-package com.acme.swift.domain;
+package com.stercomm.customers.rbs.sir.rest.domain;
 
 import java.util.List;
 

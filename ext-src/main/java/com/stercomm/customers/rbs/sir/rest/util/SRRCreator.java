@@ -1,8 +1,6 @@
-package com.acme.swift.util;
+package com.stercomm.customers.rbs.sir.rest.util;
 
-import java.util.Properties;
-
-import com.acme.swift.domain.RoutingRule;
+import com.stercomm.customers.rbs.sir.rest.domain.RoutingRule;
 import com.sterlingcommerce.woodstock.ui.SWIFTNetRoutingRuleObj;
 
 public class SRRCreator {
@@ -15,9 +13,7 @@ public class SRRCreator {
 
 	public boolean execute() {
 		
-		boolean success=false;
-		
-		Properties props = new Properties();//Utils.getGISProperties("gpl");
+	boolean success=false;
 		
 	
 	SWIFTNetRoutingRuleObj srro = new SWIFTNetRoutingRuleObj();
@@ -28,11 +24,11 @@ public class SRRCreator {
 	srro.setInvokeMode(rule.getInvokeMode());
 	srro.setActionType(rule.getActionType());
 	srro.setWorkflowName(rule.getWorkflowName());
-	srro.setRouteName(props.getProperty("gpl.tou"));
+	srro.setRouteName("gpl.route");
 	srro.setUsername(rule.getUsername());
 	srro.setNewPriority(rule.getPriority());
 	
-	
+	System.out.println("(HERE)" +rule);
 	try{
 		success=srro.saveSWIFTNetRoutingRule(1);
 	}
