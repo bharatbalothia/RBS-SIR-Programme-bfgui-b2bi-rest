@@ -1,13 +1,14 @@
 package com.stercomm.customers.rbs.sir.rest.server;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
 
 import javax.annotation.PostConstruct;
 import javax.validation.Validation;
@@ -33,18 +34,14 @@ public class RoutingRulesRestServer {
 	private static List<RoutingRule> rules = new ArrayList<RoutingRule>();
 
 	private static Logger LOGGER = Logger.getLogger(RoutingRulesRestServer.class.getName());	
-	private static final String LOGCONFIGPATH = "log.properties";
+    private static final String FORMAT_STRING="%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS %4$s %2$s %5$s%6$s%n";
 	
 	@PostConstruct
 	private void init() {
 
 		try {
-			InputStream logIS = this.getClass().getResourceAsStream(LOGCONFIGPATH);
-			System.out.println(logIS.toString());
-		
-			LogManager.getLogManager().readConfiguration(logIS);
-			System.out.println("Logging initialized from " + LOGCONFIGPATH);
-			
+			boolean logToConsole=true;
+			LOGGER=setupLogging(logToConsole, System.getProperty("user.home")+"/bfgui-rest.log");
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
@@ -54,7 +51,7 @@ public class RoutingRulesRestServer {
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
 	public List<RoutingRule> getRules() {
-		LOGGER.log(Level.ALL, "Got request for get on rules");
+		LOGGER.info("Got request for GET on rules");
 
 		return rules;
 	}
@@ -75,7 +72,7 @@ public class RoutingRulesRestServer {
 		final Errors list = new Errors();
 		final List<Error> errs = new ArrayList<Error>();
 		validatePost(validator, errs, rule);
-
+		
 		// do we have any errors?
 		if (errs.size() > 0) {
 			list.setErrors(errs);
@@ -83,13 +80,13 @@ public class RoutingRulesRestServer {
 
 		// no, just add the rule and return 201 and no body, the caller doesnt need it
 		if (list.size() == 0) {
-
+			LOGGER.info("Rule passed validation.");
 			rules.add(rule);
-			if (rule.isForReal()) {
-				System.out.println("(HERE)");
-
+			
+			boolean result = false;
+			if (rule.isCommit()) { //we want to create it
 				SRRCreator creator = new SRRCreator(rule);
-				boolean res = creator.execute();
+				result = creator.execute();
 			}
 			return Response.status(status).entity(null).build();
 
@@ -105,11 +102,14 @@ public class RoutingRulesRestServer {
 
 	private List<Error> validatePost(Validator val, List<Error> errs, RoutingRule rule) {
 
+		LOGGER.info("Validating : " +rule);
 		val.validate(rule).stream().forEach(violation -> {
 
 			String message = violation.getMessage();
+			String attr=violation.getPropertyPath().toString();
+			LOGGER.severe(attr +" : "+message);
 			Error e = new Error();
-			e.setAttribute(violation.getPropertyPath().toString());
+			e.setAttribute(attr);
 			e.setMessage(message);
 			errs.add(e);
 		});
@@ -131,4 +131,30 @@ public class RoutingRulesRestServer {
 
 	}
 
+	
+	private Logger setupLogging(boolean logToConsole, String logFile) throws Exception {
+		 // Setup the logging
+		 System.setProperty(
+		      "java.util.logging.SimpleFormatter.format",
+		      FORMAT_STRING);
+		 LogManager.getLogManager().reset();
+		 Logger thisLogger = Logger.getLogger(this.getClass().getName());
+		 if(logFile != null) {
+		   FileHandler logHandler = new FileHandler(logFile, 8*1024*1024, 2, true);
+		   logHandler.setFormatter(new SimpleFormatter()); 
+		   logHandler.setLevel(Level.FINEST); 
+		   thisLogger.addHandler(logHandler);
+		 }
+		 
+		 if(logToConsole) {
+		   ConsoleHandler consoleHandler = new ConsoleHandler();
+		   consoleHandler.setFormatter(new SimpleFormatter());
+		   consoleHandler.setLevel(Level.INFO);
+		   thisLogger.addHandler(consoleHandler);
+		 }
+		  
+		 thisLogger.setLevel(Level.INFO);
+		 return thisLogger;
+		}
+	
 }

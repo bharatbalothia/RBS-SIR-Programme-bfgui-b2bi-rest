@@ -13,12 +13,13 @@ import javax.xml.bind.annotation.XmlRootElement;
 public class RoutingRule {
 	
 	
+	
 	@Override
 	public String toString() {
-		return "RoutingRule [requestorDN=" + requestorDN + ", responderDN=" + responderDN + ", requestType="
-				+ requestType + ", service=" + service + ", workflowName=" + workflowName + ", routeName=" + routeName
+		return "RoutingRule [requestorDN=" + requestorDN + ", entityName=" + entityName + ", responderDN=" + responderDN
+				+ ", requestType=" + requestType + ", service=" + service + ", workflowName=" + workflowName
 				+ ", username=" + username + ", invokeMode=" + invokeMode + ", actionType=" + actionType + ", priority="
-				+ priority + "]";
+				+ priority + ", commit=" + commit + "]";
 	}
 	public String getRequestorDN() {
 		return requestorDN;
@@ -32,10 +33,10 @@ public class RoutingRule {
 	public void setResponderDN(String responderDN) {
 		this.responderDN = responderDN;
 	}
-	public String getRequestType() {
+	public String[] getRequestType() {
 		return requestType;
 	}
-	public void setRequestType(String requestType) {
+	public void setRequestType(String[] requestType) {
 		this.requestType = requestType;
 	}
 	public String getService() {
@@ -47,15 +48,11 @@ public class RoutingRule {
 	public String getWorkflowName() {
 		return workflowName;
 	}
+	
 	public void setWorkflowName(String workflowName) {
 		this.workflowName = workflowName;
 	}
-	public String getRouteName() {
-		return routeName;
-	}
-	public void setRouteName(String routeName) {
-		this.routeName = routeName;
-	}
+	
 	public String getUsername() {
 		return username;
 	}
@@ -85,13 +82,25 @@ public class RoutingRule {
 	@NotEmpty(message="Field cannot be empty")
 	private String requestorDN;
 	
+	@NotNull(message="Field cannot be null")
+	@NotEmpty(message="Field cannot be empty")
+	private String entityName;
 	
+	
+	public String getEntityName() {
+		return entityName;
+	}
+	public void setEntityName(String entityName) {
+		this.entityName = entityName;
+	}
+
 	@NotNull(message="Field cannot be null")
 	@NotEmpty(message="Field cannot be empty")
 	private String responderDN;
 	
-	
-	private String requestType;
+	@NotNull(message="Field cannot be null")
+	@NotEmpty(message="Field cannot be empty")
+	private String[] requestType;
 	
 	@NotNull(message="Field cannot be null")
 	@NotEmpty(message="Field cannot be empty")
@@ -100,10 +109,6 @@ public class RoutingRule {
 	@NotNull(message="Field cannot be null")
 	@NotEmpty(message="Field cannot be empty")
 	private String workflowName;
-	
-	@NotNull(message="Field cannot be null")
-	@NotEmpty(message="Field cannot be empty")
-	private String routeName;
 	
 	@NotNull(message="Field cannot be null")
 	@NotEmpty(message="Field cannot be empty")
@@ -121,13 +126,13 @@ public class RoutingRule {
 	@Max(value = 1L, message="Field value must be 0 or 1")
 	private int priority;
 	
-	private boolean forReal=false;
+	private boolean commit=false;
 
-	public boolean isForReal() {
-		return forReal;
+	public boolean isCommit() {
+		return commit;
 	}
-	public void setForReal(boolean forReal) {
-		this.forReal = forReal;
+	public void setCommit(boolean commit) {
+		this.commit = commit;
 	}
 
 }
