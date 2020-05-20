@@ -1,17 +1,17 @@
 package com.stercomm.customers.rbs.sir.rest.domain;
 
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
-import javax.validation.constraints.Size;
 import javax.xml.bind.annotation.XmlRootElement;
 
 
 @XmlRootElement
 public class RoutingRule {
 	
+	public static final String INVOKE_METHOD = "SYNC";
+	public static final String INVOKE_TYPE = "BP";
+	public static final String WORKFLOW_NAME = "FB_GPL_SWIFT_Route";
 	
 	
 	@Override
@@ -106,8 +106,6 @@ public class RoutingRule {
 	@NotEmpty(message="Field cannot be empty")
 	private String service;
 	
-	@NotNull(message="Field cannot be null")
-	@NotEmpty(message="Field cannot be empty")
 	private String workflowName;
 	
 	@NotNull(message="Field cannot be null")
@@ -115,16 +113,14 @@ public class RoutingRule {
 	private String username;
 	
 	@Pattern(regexp = "sync|async", flags = Pattern.Flag.CASE_INSENSITIVE, message = "Field values can be async or sync")
-	private String invokeMode;
+	private String invokeMode = INVOKE_METHOD;
 	
 	
 	@NotNull(message="Field cannot be null")
 	@NotEmpty(message="Field cannot be empty")
-	private String actionType;
+	private String actionType = INVOKE_TYPE;
 	
-	@Min(value = 0L,	message="Field value must be 0 or 1")
-	@Max(value = 1L, message="Field value must be 0 or 1")
-	private int priority;
+	private int priority = 0;
 	
 	private boolean commit=false;
 

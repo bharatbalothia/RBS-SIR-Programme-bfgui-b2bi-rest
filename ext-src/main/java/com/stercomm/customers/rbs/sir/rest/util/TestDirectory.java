@@ -6,10 +6,9 @@ public class TestDirectory {
 		// TODO Auto-generated method stub
 
 			TestDirectory td = new TestDirectory();
-		//	String respDN = "cn=foo,ou=abc,o=bankbebb,o=swift";
-		//	String reqDN = "cn=bar,ou=abc,o=bankbebb,o=swift";
-			String respDN = "foo";
-			String reqDN = "bar";
+			String reqDN = "cn=bar.com,ou=abc,o=bank02,o=swift";
+			String respDN = "cn=foo.com,ou=abc,o=bank01,o=swift";
+			
 			System.out.println(td.createSWIFTDirectory(reqDN, respDN));
 			
 			
