@@ -26,6 +26,7 @@ import org.codehaus.jackson.map.ObjectMapper;
 import com.stercomm.customers.rbs.sir.rest.domain.Error;
 import com.stercomm.customers.rbs.sir.rest.domain.Errors;
 import com.stercomm.customers.rbs.sir.rest.domain.RoutingRule;
+import com.stercomm.customers.rbs.sir.rest.util.SRRCreateLog;
 import com.stercomm.customers.rbs.sir.rest.util.SRRCreator;
 
 @Path("/rules")
@@ -54,7 +55,7 @@ public class RoutingRulesRestServer {
 		LOGGER.info("Got request for GET on rules");
 
 		return rules;
-		
+
 	}
 	// comment
 
@@ -85,17 +86,57 @@ public class RoutingRulesRestServer {
 			rules.add(rule);
 
 			SRRCreator creator = new SRRCreator(rule);
-			boolean result = creator.execute();
+			creator.execute();
+			List<SRRCreateLog> logs = creator.getLogOfCreateAttempts();
 
-			return Response.status(status).entity(null).build();
+			int finalStatus = getStatus(logs);
 
-			// yes, there was at least one error so create a JSON response back
+			if (finalStatus == statusOKSC) {
+
+				return Response.status(finalStatus).entity(null).build();
+			} else {
+				
+				// we got some errors back when we tried to create at least some of the rules
+				Errors createErrs = new Errors();
+				List<Error> eList = new ArrayList<Error>();
+				logs.forEach(log -> {
+					Error e=new Error();
+					e.setMessage(log.getFailCause());
+					e.setAttribute(log.getEntityName());
+					eList.add(e);
+					});
+				createErrs.setErrors(eList);
+				LOGGER.info("Returning some errors : " + eList);
+				return Response.status(finalStatus).entity(createErrs).build();
+			}
+
+			// yes, there was at least one basic type validation error so create a JSON response back
 		} else {
 			status = validationFailureSC;
 			Error[] ar = errs.toArray(new Error[list.size()]);
 //			
 			return Response.status(status).entity(toErrorResp(list)).build();
 		}
+
+	}
+
+	private int getStatus(List<SRRCreateLog> logs) {
+
+		int statusOKSC = 201;
+		int createFailureSC = 404;
+
+		int retval = statusOKSC;
+
+		// do any of the create logs have an error?
+
+		for (SRRCreateLog srrCreateLog : logs) {
+			LOGGER.info("Log : " + srrCreateLog);
+			retval = srrCreateLog.isSuccessOnCreate() ? statusOKSC : createFailureSC;
+
+		}
+		LOGGER.info("Returning status : " + retval);
+
+		return retval;
 
 	}
 

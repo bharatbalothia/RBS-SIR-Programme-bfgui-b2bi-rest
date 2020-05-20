@@ -16,22 +16,25 @@ public class SRRCreator {
 
 	private RoutingRule rule;
 	private Properties gplProps = null;
-	private List<SWIFTNetRoutingRuleObj> createdRules;
+	private List<SRRCreateLog> logOfCreateAttempts;
+
+	public List<SRRCreateLog> getLogOfCreateAttempts() {
+		return logOfCreateAttempts;
+	}
 
 	public SRRCreator(RoutingRule _rule) {
 
 		rule = _rule;
-		
-		createdRules = new ArrayList<SWIFTNetRoutingRuleObj>();
 
-		//gplProps = Manager.getProperties("GPL");
+		logOfCreateAttempts = new ArrayList<SRRCreateLog>();
+
+		// gplProps = Manager.getProperties("GPL");
 		gplProps = new Properties();
-		try{
+		try {
 			gplProps.load(this.getClass().getResourceAsStream("/gpl.properties"));
-			LOGGER.info("Loaded GPL properties (" + gplProps.size() + ")" );
-		}
-		catch(IOException ioe) {
-			
+			LOGGER.info("Loaded GPL properties (" + gplProps.size() + ")");
+		} catch (IOException ioe) {
+
 			ioe.printStackTrace();
 		}
 
@@ -43,17 +46,16 @@ public class SRRCreator {
 
 		for (int k = 0; k < rule.getRequestType().length; k++) {
 			LOGGER.info("Creating rule for " + rule.getEntityName() + " [" + rule.getRequestType()[k] + "]");
-			success = createRR(rule, k);
+			logOfCreateAttempts.add(createRoutingRule(rule, k));
 		}
 
 		return success;
 	}
 
-	private boolean createRR(RoutingRule rule, int rType) {
+	private SRRCreateLog createRoutingRule(RoutingRule rule, int rType) {
 
-		boolean success = false;
-		// final String subsetForFormat = "gpl.ui.rtm";
-		// final String subsetForRoute = "gpl.route";
+		SRRCreateLog log = new SRRCreateLog();
+		log.setEntityName(rule.getEntityName());
 
 		String unresolvedRequestType = rule.getRequestType()[rType];
 
@@ -82,41 +84,77 @@ public class SRRCreator {
 		srro.setUsername(rule.getUsername());
 		srro.setNewPriority(rule.getPriority());
 
-		LOGGER.info("Trying to create new rule : " + srro.getRouteName());
-		try {
-			createdRules.add(srro);
-			
-			if (rule.isCommit()) {
+		// check the pre-existing domain of Rules
+		validate(srro, log);
 
-				success = srro.saveSWIFTNetRoutingRule(SWIFTNetRoutingRuleObj.INSERT_ACTION);
-				if (success) {
-					LOGGER.info("Rule created : " + srro);
+		if (!log.isSuccessOnValidate()) {
+
+			LOGGER.severe("Cannot create SRR object");
+		} else {
+			try { //let's see if we can
+
+				if (rule.isCommit() && log.isSuccessOnValidate()) { // are going to try to save it..we know we can
+					LOGGER.info("Trying to create new rule : " + srro.getRouteName());
+					log.setSuccessOnCreate(srro.saveSWIFTNetRoutingRule(SWIFTNetRoutingRuleObj.INSERT_ACTION));
+
+					if (log.isSuccessOnCreate()) { // did we manage to save it?
+						LOGGER.info("SRR object created with id : " + srro.getobjectID());
+					}
 				}
-			}
-		} catch (Exception ie) {
+			} catch (Exception ie) {
 
-			LOGGER.info("Failed to created rule : " + ie.getMessage());
+				LOGGER.info("Failed to created rule : " + ie.getMessage());
+			}
 		}
-		return success;
+		return log;
 
 	}
 
 	private String getWorkflowName(String requestType) {
 
 		String s = gplProps.getProperty("gpl.route." + requestType);
-		LOGGER.info("Determining workflow name for "  +requestType);
+		LOGGER.info("Determining workflow name for " + requestType);
 		if ((s == null) || s.equals("")) {
 
 			s = RoutingRule.WORKFLOW_NAME;
-			LOGGER.info("Using default workflow name : "  +s);
+			LOGGER.info("Using default workflow name : " + s);
 		}
 
 		return s;
 	}
-	
-	public List<SWIFTNetRoutingRuleObj> getCreatedRules(){
-		
-		return createdRules;
-		
+
+	private void validate(SWIFTNetRoutingRuleObj srro, SRRCreateLog log) {
+
+		String ruleID = srro.exists(srro.getRequestor(), srro.getResponder(), srro.getService(), srro.getRequestType());
+
+		if (ruleID != null) {
+
+			// we have a record
+			// lets check the name is the same!
+			LOGGER.info("Found SRR Object with ID: " + ruleID);
+
+			String checkID = srro.checkExistsByName(srro.getRouteName());
+
+			if (checkID == null) {
+				String s = "Routing Rule with the required Route Name was not found but a rule exists already with the same parameters";
+
+				LOGGER.severe(s);
+				log.setFailCause(s);
+
+			}
+			else {
+				String s = "Routing Rule exists already with the same name.";
+
+				LOGGER.severe(s);
+				log.setFailCause(s);
+			}
+			
+
+		} else {
+
+			LOGGER.info("No existing SRR Object found for " + srro.getRouteName());
+			log.setSuccessOnValidate(true);
+		}
+
 	}
 }
