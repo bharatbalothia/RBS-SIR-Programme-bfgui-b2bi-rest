@@ -122,7 +122,7 @@ public class RoutingRule {
 	
 	private int priority = 0;
 	
-	private boolean commit=false;
+	private boolean commit=true;
 
 	public boolean isCommit() {
 		return commit;
