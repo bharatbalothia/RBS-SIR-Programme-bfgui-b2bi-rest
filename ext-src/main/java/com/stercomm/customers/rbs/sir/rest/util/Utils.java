@@ -51,79 +51,6 @@ public class Utils {
 	private static Logger LOGGER = Logger.getLogger(Utils.class.getName());
 	
 	private static final long serialVersionUID = 1L;
-/*	
-		public static String getGISProperty(String propertyFile, String key){
-		return Utils.getInstance().getGISPropertyI(propertyFile, key);
-	}
-	
-	public String getGISPropertyI(String propertyFile, String key){
-		Properties propsFile = null;	
-		String value;		
-		try {
-			propsFile = Manager.getProperties(propertyFile);
-			if(propsFile==null) {
-				Manager.refreshPropertiesFromDisk(propertyFile);
-				propsFile = Manager.getProperties(propertyFile);
-			}
-			value = propsFile.getProperty(key);
-		} catch(Exception e){
-			String msg = "could not load GIS property '"+key+"' from file '"+propertyFile+"'";
-			LOGGER.finest(msg);
-			throw new RuntimeException(msg, e);
-		} 
-		return value;
-	}
-	
-	public static Properties getGISProperties(String propertyFile){
-		Utils utils = getInstance();
-		return utils.getGISPropertiesI(propertyFile);
-	}
-	
-	public Properties getGISPropertiesI(String propertyFile){
-		Properties propsFile = null;		
-		try {
-			propsFile = Manager.getProperties(propertyFile);
-			if(propsFile==null) {
-				Manager.refreshPropertiesFromDisk(propertyFile);
-				propsFile = Manager.getProperties(propertyFile);
-			}
-		}
-		catch(Exception e){
-			String msg = "could not load GIS property file '"+propertyFile+"'";
-			LOGGER.finest(msg);
-			throw new RuntimeException(msg, e);
-		} 
-		return propsFile;
-	}
-	
-	
-	
-	
-	/*
-	public String getGISUsername(HttpServletRequest request){
-		return (String)request.getSession().getAttribute(Constants.GIS_USERNAME);
-	}
-	*/
-	
-	/*
-	
-	public static boolean adminAudit(HttpServletRequest request, Entity entity){
-		Utils utils = getInstance();
-		return utils.adminAuditI(request, entity);
-	}
-	
-	
-	public boolean adminAuditI(HttpServletRequest request, Entity entity){
-		
-		String actionType = entity.isCreateBean()?"Create Entity":"Edit Entity";
-		String objectName = entity.getEntity();
-		String actionValue = entity.toString();
-		//TODO: change actionValue to XML;
-		
-		return adminAudit(request, actionType, objectName, actionValue);
-		
-	}
-	*/
 	
 	/**
 	 * Changes to Entity and overrides/terminates actions from the File Monitor should 
@@ -192,7 +119,7 @@ public class Utils {
 	public static boolean parseSWIFTDN(String reqDN, String respDN){
 		boolean ret = true;
 		try {
-			String dir = createSWIFTDirectory(reqDN,respDN); 
+			String dir = createSWIFTDirectoryPath(reqDN,respDN); 
 			if(dir.equalsIgnoreCase("")){
 				ret = false;
 			}
@@ -202,7 +129,7 @@ public class Utils {
 		return ret;
 	}
 
-	public static String createSWIFTDirectory(String reqDN, String respDN){
+	public static String createSWIFTDirectoryPath(String reqDN, String respDN){
 
 		String swiftDir = readSWIFTDN(respDN) + "/" + readSWIFTDN(reqDN);
 		return swiftDir;

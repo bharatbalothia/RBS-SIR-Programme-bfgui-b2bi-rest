@@ -1,6 +1,12 @@
 package com.stercomm.customers.rbs.sir.rest.server;
 
 import java.io.IOException;
+
+import com.sterlingcommerce.woodstock.workflow.WorkFlowContext;
+import com.sterlingcommerce.woodstock.workflow.Document;
+import com.sterlingcommerce.woodstock.workflow.InitialWorkFlowContext;
+import com.sterlingcommerce.woodstock.workflow.InitialWorkFlowContextException;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.ConsoleHandler;
@@ -26,8 +32,10 @@ import org.codehaus.jackson.map.ObjectMapper;
 import com.stercomm.customers.rbs.sir.rest.domain.Error;
 import com.stercomm.customers.rbs.sir.rest.domain.Errors;
 import com.stercomm.customers.rbs.sir.rest.domain.RoutingRule;
+import com.stercomm.customers.rbs.sir.rest.exception.CreateDirectoryException;
 import com.stercomm.customers.rbs.sir.rest.util.SRRCreateLog;
 import com.stercomm.customers.rbs.sir.rest.util.SRRCreator;
+import com.stercomm.customers.rbs.sir.rest.util.Utils;
 
 @Path("/rules")
 public class RoutingRulesRestServer {
@@ -90,9 +98,20 @@ public class RoutingRulesRestServer {
 			List<SRRCreateLog> logs = creator.getLogOfCreateAttempts();
 
 			int finalStatus = getStatus(logs);
-
+			
+			// try to create the directory
+			
+			try {
+				createSWIFTDirectory(rule);
+			}
+			catch (CreateDirectoryException cde) {
+				
+				LOGGER.severe(cde.getMessage());
+			}
+			
 			if (finalStatus == statusOKSC) {
-
+		
+		
 				return Response.status(finalStatus).entity(null).build();
 			} else {
 				
@@ -192,6 +211,35 @@ public class RoutingRulesRestServer {
 
 		thisLogger.setLevel(Level.INFO);
 		return thisLogger;
+	}
+	
+	public void createSWIFTDirectory(RoutingRule rule) throws CreateDirectoryException{
+		
+		String reqDN = rule.getRequestorDN();
+		String respDN = rule.getResponderDN();
+		
+		String dirToCreate = Utils.createSWIFTDirectoryPath(reqDN, respDN);
+		
+		try {
+			InitialWorkFlowContext iwfc = new InitialWorkFlowContext();
+			WorkFlowContext wfc = new WorkFlowContext();
+			Document primaryDocumentOutput = wfc.newDocument();
+			
+			// how do i set name/values. xml etc in the primary?
+			// primaryDocumentOutput. ???
+	
+			 wfc.setWFContent("SWIFTDirectory",dirToCreate);
+			 iwfc.putPrimaryDocument(primaryDocumentOutput);
+		
+			 iwfc.setWorkFlowName("HelloWorld"); 
+			 iwfc.start();
+		}
+		catch (InitialWorkFlowContextException iwcf) {
+			
+			throw new CreateDirectoryException("Unable to create SWIFT Dir "+ dirToCreate+" : "+iwcf.getMessage());
+		}
+		
+		
 	}
 
 }
