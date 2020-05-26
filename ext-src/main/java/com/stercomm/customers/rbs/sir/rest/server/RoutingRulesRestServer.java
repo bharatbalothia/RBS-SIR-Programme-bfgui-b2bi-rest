@@ -1,12 +1,8 @@
 package com.stercomm.customers.rbs.sir.rest.server;
 
+import java.io.File;
 import java.io.IOException;
-
-import com.sterlingcommerce.woodstock.workflow.WorkFlowContext;
-import com.sterlingcommerce.woodstock.workflow.Document;
-import com.sterlingcommerce.woodstock.workflow.InitialWorkFlowContext;
-import com.sterlingcommerce.woodstock.workflow.InitialWorkFlowContextException;
-
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.ConsoleHandler;
@@ -36,6 +32,10 @@ import com.stercomm.customers.rbs.sir.rest.exception.CreateDirectoryException;
 import com.stercomm.customers.rbs.sir.rest.util.SRRCreateLog;
 import com.stercomm.customers.rbs.sir.rest.util.SRRCreator;
 import com.stercomm.customers.rbs.sir.rest.util.Utils;
+import com.sterlingcommerce.woodstock.workflow.Document;
+import com.sterlingcommerce.woodstock.workflow.InitialWorkFlowContext;
+import com.sterlingcommerce.woodstock.workflow.InitialWorkFlowContextException;
+import com.sterlingcommerce.woodstock.workflow.WorkFlowContext;
 
 @Path("/rules")
 public class RoutingRulesRestServer {
@@ -98,38 +98,37 @@ public class RoutingRulesRestServer {
 			List<SRRCreateLog> logs = creator.getLogOfCreateAttempts();
 
 			int finalStatus = getStatus(logs);
-			
+
 			// try to create the directory
-			
+
 			try {
 				createSWIFTDirectory(rule);
-			}
-			catch (CreateDirectoryException cde) {
-				
+			} catch (CreateDirectoryException cde) {
+
 				LOGGER.severe(cde.getMessage());
 			}
-			
+
 			if (finalStatus == statusOKSC) {
-		
-		
+
 				return Response.status(finalStatus).entity(null).build();
 			} else {
-				
+
 				// we got some errors back when we tried to create at least some of the rules
 				Errors createErrs = new Errors();
 				List<Error> eList = new ArrayList<Error>();
 				logs.forEach(log -> {
-					Error e=new Error();
+					Error e = new Error();
 					e.setMessage(log.getFailCause());
 					e.setAttribute(log.getEntityName());
 					eList.add(e);
-					});
+				});
 				createErrs.setErrors(eList);
 				LOGGER.info("Returning some errors : " + eList);
 				return Response.status(finalStatus).entity(createErrs).build();
 			}
 
-			// yes, there was at least one basic type validation error so create a JSON response back
+			// yes, there was at least one basic type validation error so create a JSON
+			// response back
 		} else {
 			status = validationFailureSC;
 			Error[] ar = errs.toArray(new Error[list.size()]);
@@ -212,34 +211,88 @@ public class RoutingRulesRestServer {
 		thisLogger.setLevel(Level.INFO);
 		return thisLogger;
 	}
-	
-	public void createSWIFTDirectory(RoutingRule rule) throws CreateDirectoryException{
-		
+
+	public void createSWIFTDirectory(RoutingRule rule) throws CreateDirectoryException {
+
 		String reqDN = rule.getRequestorDN();
 		String respDN = rule.getResponderDN();
-		
+		boolean dirCreated=false;
+
 		String dirToCreate = Utils.createSWIFTDirectoryPath(reqDN, respDN);
+
+		File swiftDir = new File("/opt/ibm/mefg/FileAct/Reception" + File.separator + dirToCreate);
 		
-		try {
-			InitialWorkFlowContext iwfc = new InitialWorkFlowContext();
-			WorkFlowContext wfc = new WorkFlowContext();
-			Document primaryDocumentOutput = wfc.newDocument();
+		
+		// does it exist?
+		boolean dirExists = swiftDir.exists();
+		
+		
+		//if so, just log and return
+		
+		if (dirExists) {
 			
-			// how do i set name/values. xml etc in the primary?
-			// primaryDocumentOutput. ???
+			LOGGER.info("SWIFT dir at " + dirToCreate+" already exists, not creating it.");
+			return;
+		}
+		
+		// so let's try to create it
+		if (!swiftDir.exists()) {
+			
+			dirCreated = swiftDir.mkdirs();
+		}
+		
+		if (dirCreated) {
+			
+			LOGGER.info("Created new directory at " +dirToCreate);
+			return;
+		}
+		else {
+			
+			throw new CreateDirectoryException("Could not create dir at : " +dirToCreate);
+			
+		}
+		
 	
-			 wfc.setWFContent("SWIFTDirectory",dirToCreate);
-			 iwfc.putPrimaryDocument(primaryDocumentOutput);
-		
-			 iwfc.setWorkFlowName("HelloWorld"); 
-			 iwfc.start();
-		}
-		catch (InitialWorkFlowContextException iwcf) {
-			
-			throw new CreateDirectoryException("Unable to create SWIFT Dir "+ dirToCreate+" : "+iwcf.getMessage());
-		}
-		
-		
+		/*
+		 * try { InitialWorkFlowContext iwfc = new InitialWorkFlowContext();
+		 * WorkFlowContext wfc = new WorkFlowContext();
+		 * 
+		 * wfc.setWFContent("SwiftDirectory", dirToCreate); Document
+		 * primaryDocumentOutput = wfc.newDocument();
+		 * 
+		 * // how do i set name/values. xml etc in the primary? //
+		 * primaryDocumentOutput. ???
+		 * 
+		 * 
+		 * 
+		 * /* if(bool){ System.out.println("Directory created successfully"); }else{
+		 * System.out.println("Sorry couldn’t create specified directory"); }
+		 * 
+		 * XMLDOMWriter xmlDOMWriter = new XMLDOMWriter( new PrintWriter(new
+		 * OutputStreamWriter(primaryDocumentOutput.getOutputStream(), "UTF-8")));
+		 * xmlDOMWriter.write(docString); xmlDOMWriter.flush(); xmlDOMWriter.close();
+		 * iwfc.putPrimaryDocument(primaryDocumentOutput);
+		 * 
+		 * iwfc.setWorkFlowName("HelloWorld");
+		 * 
+		 * iwfc.start();
+		 * 
+		 * } catch (InitialWorkFlowContextException iwcf) {
+		 * 
+		 * throw new CreateDirectoryException("Unable to create SWIFT Dir " +
+		 * dirToCreate + " : " + iwcf.getMessage()); }
+		 * 
+		 * 
+		 * catch (IOException ioe) {
+		 * 
+		 * throw new CreateDirectoryException("Unable to create SWIFT Dir " +
+		 * dirToCreate + " : " + ioe.getMessage()); }
+		 * 
+		 * /*catch (SQLException sqlE) {
+		 * 
+		 * throw new CreateDirectoryException("Unable to create SWIFT Dir " +
+		 * dirToCreate + " : " + sqlE.getMessage()); }
+		 */
 	}
 
 }

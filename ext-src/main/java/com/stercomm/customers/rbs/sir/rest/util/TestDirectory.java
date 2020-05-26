@@ -9,7 +9,7 @@ public class TestDirectory {
 			String reqDN = "cn=bar.com,ou=abc,o=bank02,o=swift";
 			String respDN = "cn=foo.com,ou=abc,o=bank01,o=swift";
 			
-			System.out.println(Utils.createSWIFTDirectory(reqDN, respDN));
+			System.out.println(Utils.createSWIFTDirectoryPath(reqDN, respDN));
 			
 			
 	}
