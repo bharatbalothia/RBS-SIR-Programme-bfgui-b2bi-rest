@@ -36,6 +36,8 @@ import com.sterlingcommerce.woodstock.util.frame.Manager;
 @Path("/rules")
 public class RoutingRulesRestServer {
 
+	
+	// we can construct 1..n SWIFT routing rules from a single POST
 	private static List<RoutingRule> rules = new ArrayList<RoutingRule>();
 
 	private static Logger LOGGER = Logger.getLogger(RoutingRulesRestServer.class.getName());
@@ -70,7 +72,7 @@ public class RoutingRulesRestServer {
 	public Response postRuleRecord(RoutingRule rule) {
 
 		int statusOKSC = 201;
-		int validationFailureSC = 404;
+		int validationFailureSC = 400;
 		int status = statusOKSC;
 
 		Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
@@ -78,12 +80,17 @@ public class RoutingRulesRestServer {
 		final Errors list = new Errors();
 		final List<Error> errs = new ArrayList<Error>();
 		validatePost(validator, errs, rule);
-
-		// do we have any errors?
+		
+		// if we have any validation errors, get out right now, and send a 400
 		if (errs.size() > 0) {
+			
 			list.setErrors(errs);
+			return Response.status(validationFailureSC).entity(errs).build();
 		}
 
+		
+		// we were able to validate the rule against its type
+		
 		// no, just add the rule and return 201 and no body, the caller doesnt need it
 		if (list.size() == 0) {
 			LOGGER.info("Rule passed validation.");
@@ -154,7 +161,18 @@ public class RoutingRulesRestServer {
 
 	}
 
-	private List<Error> validatePost(Validator val, List<Error> errs, RoutingRule rule) {
+	
+	/**
+	 * Validate the rule using its annotated constraints
+	 * 
+	 * For each violation, add an Error to the List<Error> passed in
+	 * 	 * 
+	 * @param val The validator
+	 * @param errs A List <Err - we add to for any error
+	 * @param rule The rule instance to be validated
+	 * @return Void
+	 */
+	private void validatePost(Validator val, List<Error> errs, RoutingRule rule) {
 
 		LOGGER.info("Validating : " + rule);
 		val.validate(rule).stream().forEach(violation -> {
@@ -168,7 +186,7 @@ public class RoutingRulesRestServer {
 			errs.add(e);
 		});
 
-		return errs;
+	
 	}
 
 	private String toErrorResp(Errors list) {
@@ -207,8 +225,17 @@ public class RoutingRulesRestServer {
 		thisLogger.setLevel(Level.INFO);
 		return thisLogger;
 	}
-
-	public void createSWIFTDirectory(RoutingRule rule) throws CreateDirectoryException {
+/**
+ * Given a rule object, use the DNs and the base storage path to create a directory
+ * 
+ * Throw an exception if the dir cannot be created.
+ * 
+ * If the dir already exists, nothing happens - the existing directory is untouched
+ * 
+ * @param rule
+ * @throws CreateDirectoryException
+ */
+	private void createSWIFTDirectory(RoutingRule rule) throws CreateDirectoryException {
 
 		final String reqDN = rule.getRequestorDN();
 		final String respDN = rule.getResponderDN();
@@ -228,23 +255,26 @@ public class RoutingRulesRestServer {
 		
 		if (dirExists) {
 			
-			LOGGER.info("SWIFT dir at " + dirToCreate+" already exists, not creating it.");
+			LOGGER.info("SWIFT dir at " + dirToCreate+" already exists, so not creating it.");
 			return;
 		}
 		
-		// so let's try to create it
+		// it doesn't exist, so let's try to create it
 		if (!swiftDir.exists()) {
 			
 			dirCreated = swiftDir.mkdirs();
 		}
 		
+		//were we successful?
 		if (dirCreated) {
 			
+			//yes
 			LOGGER.info("Created new directory at " +dirToCreate);
 			return;
 		}
 		else {
 			
+			//no
 			throw new CreateDirectoryException("Could not create dir at : " +dirToCreate);
 			
 		}
