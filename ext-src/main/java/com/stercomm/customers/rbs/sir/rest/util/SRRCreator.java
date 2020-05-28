@@ -1,21 +1,22 @@
 package com.stercomm.customers.rbs.sir.rest.util;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
 import java.util.logging.Logger;
 
 import com.stercomm.customers.rbs.sir.rest.domain.RoutingRule;
 import com.stercomm.customers.rbs.sir.rest.server.RoutingRulesRestServer;
 import com.sterlingcommerce.woodstock.ui.SWIFTNetRoutingRuleObj;
+import com.sterlingcommerce.woodstock.util.frame.Manager;
 
 public class SRRCreator {
 
 	private static Logger LOGGER = Logger.getLogger(RoutingRulesRestServer.class.getName());
 
+	// the rule that passed validation from the caller,
+	// that we want to use to create the routing rule
 	private RoutingRule rule;
-	private Properties gplProps = null;
+	
 	private List<SRRCreateLog> logOfCreateAttempts;
 
 	public List<SRRCreateLog> getLogOfCreateAttempts() {
@@ -25,18 +26,7 @@ public class SRRCreator {
 	public SRRCreator(RoutingRule _rule) {
 
 		rule = _rule;
-
 		logOfCreateAttempts = new ArrayList<SRRCreateLog>();
-
-		// gplProps = Manager.getProperties("GPL");
-		gplProps = new Properties();
-		try {
-			gplProps.load(this.getClass().getResourceAsStream("/gpl.properties"));
-			LOGGER.info("Loaded GPL properties (" + gplProps.size() + ")");
-		} catch (IOException ioe) {
-
-			ioe.printStackTrace();
-		}
 
 	}
 
@@ -57,7 +47,7 @@ public class SRRCreator {
 		SRRCreateLog log = new SRRCreateLog();
 		log.setEntityName(rule.getEntityName());
 
-		String unresolvedRequestType = rule.getRequestType()[rType];
+		final String unresolvedRequestType = rule.getRequestType()[rType];
 
 		SWIFTNetRoutingRuleObj srro = new SWIFTNetRoutingRuleObj();
 		srro.setRequestor(rule.getRequestorDN());
@@ -67,20 +57,24 @@ public class SRRCreator {
 		srro.setInvokeMode(rule.getInvokeMode());
 		srro.setActionType(rule.getActionType());
 
-		// work out the wf name from the request type, add it back to the rule and srro
+		// work out the wf name from the request type, add it back to the rule and the srro
 		rule.setWorkflowName(getWorkflowName(unresolvedRequestType));
 		srro.setWorkflowName(rule.getWorkflowName());
 
 		// What is the req type?
 
-		String resolvedReqType = gplProps.getProperty("gpl.ui.rtm." + unresolvedRequestType);
+		String resolvedReqType=Manager.getProperties("GPL").getProperty("ui.rtm."+unresolvedRequestType);
 		if (resolvedReqType == null || resolvedReqType.equalsIgnoreCase("")) {
 			resolvedReqType = unresolvedRequestType.replaceAll(".", "");
 		}
 
 		srro.setRequestType(resolvedReqType);
 
-		srro.setRouteName("GPL_" + rule.getEntityName() + "_" + unresolvedRequestType + "_RR");
+		final String prefix=Manager.getProperties("GPL").getProperty("route.name.prefix");
+		final String suffix=Manager.getProperties("GPL").getProperty("route.name.suffix");
+		final String sep = Manager.getProperties("GPL").getProperty("route.name.separator");
+		
+		srro.setRouteName(prefix + rule.getEntityName() + sep + unresolvedRequestType + suffix);
 		srro.setUsername(rule.getUsername());
 		srro.setNewPriority(rule.getPriority());
 
@@ -112,11 +106,12 @@ public class SRRCreator {
 
 	private String getWorkflowName(String requestType) {
 
-		String s = gplProps.getProperty("gpl.route." + requestType);
+	//	String s = gplProps.getProperty("gpl.route." + requestType);
+		String s =Manager.getProperties("GPL").getProperty("route." + requestType);
 		LOGGER.info("Determining workflow name for " + requestType);
 		if ((s == null) || s.equals("")) {
 
-			s = RoutingRule.WORKFLOW_NAME;
+			s = Manager.getProperties("GPL").getProperty("routing.default.workflow");
 			LOGGER.info("Using default workflow name : " + s);
 		}
 

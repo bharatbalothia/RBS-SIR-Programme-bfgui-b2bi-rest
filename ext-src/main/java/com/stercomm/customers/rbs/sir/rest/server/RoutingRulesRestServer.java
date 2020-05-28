@@ -2,7 +2,6 @@ package com.stercomm.customers.rbs.sir.rest.server;
 
 import java.io.File;
 import java.io.IOException;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.ConsoleHandler;
@@ -32,10 +31,7 @@ import com.stercomm.customers.rbs.sir.rest.exception.CreateDirectoryException;
 import com.stercomm.customers.rbs.sir.rest.util.SRRCreateLog;
 import com.stercomm.customers.rbs.sir.rest.util.SRRCreator;
 import com.stercomm.customers.rbs.sir.rest.util.Utils;
-import com.sterlingcommerce.woodstock.workflow.Document;
-import com.sterlingcommerce.woodstock.workflow.InitialWorkFlowContext;
-import com.sterlingcommerce.woodstock.workflow.InitialWorkFlowContextException;
-import com.sterlingcommerce.woodstock.workflow.WorkFlowContext;
+import com.sterlingcommerce.woodstock.util.frame.Manager;
 
 @Path("/rules")
 public class RoutingRulesRestServer {
@@ -50,7 +46,7 @@ public class RoutingRulesRestServer {
 
 		try {
 			boolean logToConsole = true;
-			LOGGER = setupLogging(logToConsole, System.getProperty("user.home") + "/bfgui-rest.log");
+			LOGGER = setupLogging(logToConsole, System.getProperty("user.home") + "/bfgui-rest-routingrule.log");
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
@@ -214,18 +210,19 @@ public class RoutingRulesRestServer {
 
 	public void createSWIFTDirectory(RoutingRule rule) throws CreateDirectoryException {
 
-		String reqDN = rule.getRequestorDN();
-		String respDN = rule.getResponderDN();
+		final String reqDN = rule.getRequestorDN();
+		final String respDN = rule.getResponderDN();
 		boolean dirCreated=false;
 
-		String dirToCreate = Utils.createSWIFTDirectoryPath(reqDN, respDN);
+		final String dirToCreate = Utils.createSWIFTDirectoryPath(reqDN, respDN);
+		final String basePath=Manager.getProperties("sfg").getProperty("sharedstorage.path");
 
-		File swiftDir = new File("/opt/ibm/mefg/FileAct/Reception" + File.separator + dirToCreate);
+		File swiftDir = new File(basePath + File.separator + dirToCreate);
 		
 		
-		// does it exist?
+		// does it exist already?
 		boolean dirExists = swiftDir.exists();
-		
+
 		
 		//if so, just log and return
 		

@@ -8,11 +8,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement
 public class RoutingRule {
-	
-	public static final String INVOKE_METHOD = "SYNC";
-	public static final String INVOKE_TYPE = "BP";
-	public static final String WORKFLOW_NAME = "FB_GPL_SWIFT_Route";
-	
+
 	
 	@Override
 	public String toString() {
@@ -106,24 +102,18 @@ public class RoutingRule {
 	@NotEmpty(message="Field cannot be empty")
 	private String service;
 	
-	private String workflowName;
 	
 	@NotNull(message="Field cannot be null")
 	@NotEmpty(message="Field cannot be empty")
 	private String username;
 	
-	@Pattern(regexp = "sync|async", flags = Pattern.Flag.CASE_INSENSITIVE, message = "Field values can be async or sync")
-	private String invokeMode = INVOKE_METHOD;
-	
-	
-	@NotNull(message="Field cannot be null")
-	@NotEmpty(message="Field cannot be empty")
-	private String actionType = INVOKE_TYPE;
-	
+	private String invokeMode = null;
+	private String actionType = null;
 	private int priority = 0;
-	
 	private boolean commit=true;
-
+	private String workflowName;
+	
+	
 	public boolean isCommit() {
 		return commit;
 	}

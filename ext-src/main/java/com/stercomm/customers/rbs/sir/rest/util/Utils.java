@@ -31,15 +31,8 @@
 * Date/time:  $Date: $
 **********************************************************************/
 package com.stercomm.customers.rbs.sir.rest.util;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.Properties;
-import java.util.StringTokenizer;
 import java.util.logging.Logger;
-
-import javax.servlet.http.HttpServletRequest;
 
 //import com.sterlingcommerce.woodstock.util.Util;
 import com.sterlingcommerce.woodstock.util.frame.Manager;
@@ -52,70 +45,71 @@ public class Utils {
 	
 	private static final long serialVersionUID = 1L;
 	
-	/**
-	 * Changes to Entity and overrides/terminates actions from the File Monitor should 
-	 * be logged in the Admin Audit. Code to use is 
-	 * DmiVisEventFactory.fireAdminAuditEvent(6, ExceptionLevel.NORMAL, Util.createGUID(), 
-	 * System.currentTimeMillis(), <user>, <action_type>, "SCT", <object_name>, <action_value>); 
-	 * 
-	 * For Entity chnages <action_type>="Edit or Create Entity", 
-	 * <object_name>=<entity> and 
-	 * <action_value>=<entity>. 
-	 * 
-	 * For Terminate action, 
-	 * 
-	 * <action_type>="Terminate File", 
-	 * <object_name>=WFID+"_"+BundleID and 
-	 * <action_value>=WFID+"_"+BundleID
-	 *
-	 * public static void fireAdminAuditEvent(
-     *       int numericTag, ExceptionLevel exceptionLevel,
-     *       String adminAuditId, long time, String principal, String actionType,
-     *       String objectType, String objectName, String actionValue)  throws InvalidEventException {
-	 *
-	 *
-	 * @return
-	 */
-	/*
-	public boolean adminAudit(HttpServletRequest request,String actionType, String objectName, String actionValue){
-		
-		int numericTag = 6;
-		ExceptionLevel exceptionLevel = ExceptionLevel.EXCEPTIONAL;
-		String adminAuditId = Util.createGUID();
-		long time = System.currentTimeMillis();
-		String principal = getGISUsername(request);
-		String objectType = "SCT";
-		 
-		return adminAudit(numericTag, exceptionLevel, adminAuditId, time, principal, actionType, objectType, objectName, actionValue);
-		
-		//6, ExceptionLevel.NORMAL, Util.createGUID(), System.currentTimeMillis(), <user>, <action_type>, "SCT", <object_name>, <action_value>
+	private static final ThreadLocal threadSession = new ThreadLocal(); 
 	
+	private Utils(){
 	}
 	
+	public static Utils getInstance(){
+		Utils utils = (Utils)threadSession.get();
+		
+		if (utils==null){
+			synchronized (Utils.class) {
+				utils = (Utils)threadSession.get();
 
-	public boolean adminAudit(int numericTag,
-		 ExceptionLevel exceptionLevel,
-		 String adminAuditId, 
-		 long time, 
-		 String principal, 
-		 String actionType,
-		 String objectType, 
-		 String objectName, 
-		 String actionValue){
-		
-		
-		try {
-			DmiVisEventFactory.fireAdminAuditEvent(numericTag, exceptionLevel, adminAuditId, time, principal, actionType, objectType, objectName, actionValue);
-		} catch (InvalidEventException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return false;
-		} 
-		return true;
-		
+				if (utils==null){
+					utils = new Utils();
+					threadSession.set(utils);
+				}
+			}
+		}
+		return utils;
 	}
-	*/
 	
+	public static String getGISProperty(String propertyFile, String key){
+		return Utils.getInstance().getGISPropertyI(propertyFile, key);
+	}
+	
+	public String getGISPropertyI(String propertyFile, String key){
+		Properties propsFile = null;	
+		String value;		
+		try {
+			propsFile = Manager.getProperties(propertyFile);
+			if(propsFile==null) {
+				Manager.refreshPropertiesFromDisk(propertyFile);
+				propsFile = Manager.getProperties(propertyFile);
+			}
+			value = propsFile.getProperty(key);
+		} catch(Exception e){
+			String msg = "could not load GIS property '"+key+"' from file '"+propertyFile+"'";
+			LOGGER.severe(msg);
+			throw new RuntimeException(msg, e);
+		} 
+		return value;
+	}
+	
+	public static Properties getGISProperties(String propertyFile){
+		Utils utils = getInstance();
+		return utils.getGISPropertiesI(propertyFile);
+	}
+	
+	public Properties getGISPropertiesI(String propertyFile){
+		Properties propsFile = null;		
+		try {
+			propsFile = Manager.getProperties(propertyFile);
+			if(propsFile==null) {
+				Manager.refreshPropertiesFromDisk(propertyFile);
+				propsFile = Manager.getProperties(propertyFile);
+			}
+		}
+		catch(Exception e){
+			String msg = "could not load GIS property file '"+propertyFile+"'";
+			LOGGER.severe(msg);
+			throw new RuntimeException(msg, e);
+		} 
+		return propsFile;
+	}
+		
 	public static boolean parseSWIFTDN(String reqDN, String respDN){
 		boolean ret = true;
 		try {
