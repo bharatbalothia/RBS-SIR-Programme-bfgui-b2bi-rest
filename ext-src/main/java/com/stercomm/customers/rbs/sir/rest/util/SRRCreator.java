@@ -45,7 +45,7 @@ public class SRRCreator {
 	private SRRCreateLog createRoutingRule(RoutingRule rule, int rType) {
 
 		SRRCreateLog log = new SRRCreateLog();
-		log.setEntityName(rule.getEntityName());
+		log.setRouteName(rule.getEntityName());
 
 		final String unresolvedRequestType = rule.getRequestType()[rType];
 
@@ -54,12 +54,12 @@ public class SRRCreator {
 		srro.setResponder(rule.getResponderDN());
 
 		srro.setService(rule.getService());
-		srro.setInvokeMode(rule.getInvokeMode());
-		srro.setActionType(rule.getActionType());
+		srro.setInvokeMode("BP");
+		srro.setActionType("SYNC");
 
 		// work out the wf name from the request type, add it back to the rule and the srro
-		rule.setWorkflowName(getWorkflowName(unresolvedRequestType));
-		srro.setWorkflowName(rule.getWorkflowName());
+	
+		srro.setWorkflowName(getWorkflowName(unresolvedRequestType));
 
 		// What is the req type?
 
@@ -76,11 +76,11 @@ public class SRRCreator {
 		
 		srro.setRouteName(prefix + rule.getEntityName() + sep + unresolvedRequestType + suffix);
 		srro.setUsername(rule.getUsername());
-		srro.setNewPriority(rule.getPriority());
+		srro.setNewPriority(0);
 
 		// check the pre-existing domain of Rules
 		validate(srro, log);
-
+		/*
 		if (!log.isSuccessOnValidate()) {
 
 			LOGGER.severe("Cannot create SRR object");
@@ -100,6 +100,7 @@ public class SRRCreator {
 				LOGGER.info("Failed to created rule : " + ie.getMessage());
 			}
 		}
+		*/
 		return log;
 
 	}
@@ -148,7 +149,7 @@ public class SRRCreator {
 		} else {
 
 			LOGGER.info("No existing SRR Object found for " + srro.getRouteName());
-			log.setSuccessOnValidate(true);
+			//log.setSuccessOnValidate(true);
 		}
 
 	}

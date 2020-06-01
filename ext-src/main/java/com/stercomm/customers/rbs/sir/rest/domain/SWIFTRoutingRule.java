@@ -1,9 +1,22 @@
 package com.stercomm.customers.rbs.sir.rest.domain;
 
+import java.util.logging.Logger;
+
+import com.stercomm.customers.rbs.sir.rest.server.RoutingRulesRestServer;
 import com.sterlingcommerce.woodstock.ui.SWIFTNetRoutingRuleObj;
 import com.sterlingcommerce.woodstock.util.frame.Manager;
 
+/**
+ * 
+ * A builder implementation to wrap the SRR create in something more flexible.  Some logic to look up
+ * against properties for workflow name and resolved request type
+ * 
+ * @author PETERGreaves
+ *
+ */
 public class SWIFTRoutingRule {
+	
+	private static Logger LOGGER = Logger.getLogger(RoutingRulesRestServer.class.getName());
 
 	public static class Builder {
 	
@@ -17,6 +30,7 @@ public class SWIFTRoutingRule {
 		private String routeName;
 		private String userName;
 		private int priority;
+		
 
 		public Builder() {
 
@@ -37,9 +51,10 @@ public class SWIFTRoutingRule {
 			return this;
 		}
 
-		public Builder withWorkflowName(String requestType) {
+		public Builder withWorkflowName(String unresolvedRequestType) {
 
-			this.workflowName = getWorkflowName(this.requestType);
+			//resolve the unresolved request name to a workflow type
+			this.workflowName = getWorkflowName(unresolvedRequestType);
 
 			return this;
 		}
@@ -85,15 +100,11 @@ public class SWIFTRoutingRule {
 			return this;
 		}
 		
-	
 		public Builder withPriority(int p) {
 
 			this.priority = p;
 			return this;
 		}
-		
-		
-		
 
 		public SWIFTNetRoutingRuleObj build() {
 
@@ -107,8 +118,8 @@ public class SWIFTRoutingRule {
 			srro.setActionType(this.actionType);
 			srro.setInvokeMode(this.invokeMode);
 			srro.setRouteName(this.routeName);
-			srro.setNewPriority(this.priority);
 			srro.setUsername(this.userName);
+			srro.setPriority(this.priority);
 			
 			return srro;
 		}
@@ -121,19 +132,37 @@ public class SWIFTRoutingRule {
 
 		private String resolvedRequestType(String s) {
 
+			// resolve the request type
+			
+
+			LOGGER.info("Establishing the resolved request type from : " + s);
 			String resolvedReqType = Manager.getProperties("GPL").getProperty("ui.rtm." + s);
+			
 			if (resolvedReqType == null || resolvedReqType.equalsIgnoreCase("")) {
 				resolvedReqType = s.replaceAll(".", "");
+
+				LOGGER.info("Resolved to : " + resolvedReqType);
 			}
 			return resolvedReqType;
 		}
 
 		private String getWorkflowName(String requestType) {
+			
+			// resolve the request type to a workflow (BP) name 
+			// or use the default
+			
+			LOGGER.info("Establishing the workflow name from request type : " + requestType);
 
 			String s = Manager.getProperties("GPL").getProperty("route." + requestType);
 
 			if ((s == null) || s.equals("")) {
-				s = Manager.getProperties("GPL").getProperty("routing.default.workflow");
+				String wf = Manager.getProperties("GPL").getProperty("routingrule.default.workflow");
+				LOGGER.info("No workflow match in properties : using default workflow name (" + wf + ")");
+				s = wf;
+			}
+			else {
+				
+				LOGGER.info("Resolved request-type specific workflow to : " + s);
 			}
 
 			return s;

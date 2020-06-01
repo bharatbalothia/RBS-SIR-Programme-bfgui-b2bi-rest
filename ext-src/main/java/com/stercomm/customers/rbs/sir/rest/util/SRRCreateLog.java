@@ -1,30 +1,40 @@
 package com.stercomm.customers.rbs.sir.rest.util;
 
+/**
+ * Simple class to capture result of save attempts on SSRs
+ * 
+ * @author PETERGreaves
+ *
+ */
 public class SRRCreateLog {
 	
 	@Override
 	public String toString() {
-		return "SRRCreateLog [entityName=" + entityName + ", successOnValidate=" + successOnValidate
-				+ ", successOnCreate=" + successOnCreate + ", failCause=" + failCause + "]";
+		return "SRRCreateLog [routeName=" + routeName + ", successOnCreate=" + successOnCreate + ", failCause=" + failCause + "]";
 	}
-	private String entityName;
-	private boolean successOnValidate;
+	private String routeName;
 	private boolean successOnCreate;
 	
+	//@XmlAttribute(required=true)
 	private String failCause;
-	public String getEntityName() {
-		return entityName;
+	
+	//@XmlAttribute(required=true)
+	private int code;
+	
+	public int getCode() {
+		return code;
 	}
-	public void setEntityName(String entityName) {
-		this.entityName = entityName;
+	public void setCode(int code) {
+		this.code = code;
+	}
+	public String getRouteName() {
+		return routeName;
+	}
+	public void setRouteName(String routeName) {
+		this.routeName = routeName;
 	}
 	
-	public boolean isSuccessOnValidate() {
-		return successOnValidate;
-	}
-	public void setSuccessOnValidate(boolean successOnValidate) {
-		this.successOnValidate = successOnValidate;
-	}
+	
 	public boolean isSuccessOnCreate() {
 		return successOnCreate;
 	}

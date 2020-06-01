@@ -1,6 +1,5 @@
 package com.stercomm.customers.rbs.sir.rest.server;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,22 +20,24 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
 
 import org.codehaus.jackson.map.ObjectMapper;
 
 import com.stercomm.customers.rbs.sir.rest.domain.Error;
 import com.stercomm.customers.rbs.sir.rest.domain.Errors;
 import com.stercomm.customers.rbs.sir.rest.domain.RoutingRule;
+import com.stercomm.customers.rbs.sir.rest.domain.SWIFTRoutingRule;
 import com.stercomm.customers.rbs.sir.rest.exception.CreateDirectoryException;
 import com.stercomm.customers.rbs.sir.rest.util.SRRCreateLog;
-import com.stercomm.customers.rbs.sir.rest.util.SRRCreator;
+import com.stercomm.customers.rbs.sir.rest.util.SRRCreateLogs;
+import com.stercomm.customers.rbs.sir.rest.util.SRRValidator;
 import com.stercomm.customers.rbs.sir.rest.util.Utils;
-import com.sterlingcommerce.woodstock.util.frame.Manager;
+import com.sterlingcommerce.woodstock.ui.SWIFTNetRoutingRuleObj;
 
 @Path("/rules")
 public class RoutingRulesRestServer {
 
-	
 	// we can construct 1..n SWIFT routing rules from a single POST
 	private static List<RoutingRule> rules = new ArrayList<RoutingRule>();
 
@@ -69,105 +70,129 @@ public class RoutingRulesRestServer {
 	@Path("/create")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces({ "application/json" })
-	public Response postRuleRecord(RoutingRule rule) {
-
-		int statusOKSC = 201;
-		int validationFailureSC = 400;
-		int status = statusOKSC;
+	public Response createSWIFTRulesFromRule(RoutingRule rule) {
 
 		Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
 
+		// what we return if the post failed to validate
 		final Errors list = new Errors();
 		final List<Error> errs = new ArrayList<Error>();
 		validatePost(validator, errs, rule);
-		
+
 		// if we have any validation errors, get out right now, and send a 400
 		if (errs.size() > 0) {
-			
+
 			list.setErrors(errs);
-			return Response.status(validationFailureSC).entity(errs).build();
+			return Response.status(Status.BAD_REQUEST).entity(errs).build();
 		}
 
+		// we got here, so we were able to validate the rule against its type
+		LOGGER.info("Rule passed validation.");
 		
-		// we were able to validate the rule against its type
+		// what we return to the client if the post validated,
+		// with the result of our attempt to create the SRRs in BI
+		SRRCreateLogs createLogs = new SRRCreateLogs();
+
+		// ok, so how many possible SRRs are there to be created from this rule?
+		// the same number as the array size of the rule request
+
+		int numOfSRRs = rule.getRequestType().length;
+		LOGGER.info("Looks like " + numOfSRRs + " in this rule, starting to build it/them.");
+
+		List<SWIFTNetRoutingRuleObj> candidateRules = new ArrayList<SWIFTNetRoutingRuleObj>(numOfSRRs);
+
+		// iterate the list create the BI SRR objects and add them to the candidate list
+
+		for (int i = 0; i < numOfSRRs; i++) {
+
+			LOGGER.info("Creating SSR for " + rule.getEntityName() + ", request type : " + rule.getRequestType()[i]);
+			SWIFTNetRoutingRuleObj swiftRule = new SWIFTRoutingRule.Builder()
+					.withActionType("BP")
+					.withService(rule.getService())
+					.withInvokeMode("SYNC")
+					.withRequestType(rule.getRequestType()[i])
+					.withWorkflowName(rule.getRequestType()[i])
+					.withRequestorDN(rule.getRequestorDN())
+					.withResponderDN(rule.getResponderDN())
+					.toRouteName(rule.getEntityName(), rule.getRequestType()[i])
+					.build();
+			candidateRules.add(swiftRule);
+		}
+
+		// iterate and parse out the SRRs  that can't be created for business logic
+		// reasons - e.g the rule already exists
+		// pass in the logs collection by ref in case the validation wants to contribute
+		List<SWIFTNetRoutingRuleObj> validatedSRRs = new SRRValidator().validatedList(candidateRules, createLogs);
+
+		// now we can try to save the ones that survived...
 		
-		// no, just add the rule and return 201 and no body, the caller doesnt need it
-		if (list.size() == 0) {
-			LOGGER.info("Rule passed validation.");
-			rules.add(rule);
-
-			SRRCreator creator = new SRRCreator(rule);
-			creator.execute();
-			List<SRRCreateLog> logs = creator.getLogOfCreateAttempts();
-
-			int finalStatus = getStatus(logs);
-
-			// try to create the directory
-
+		int failCount = 0;
+		
+		for (SWIFTNetRoutingRuleObj swiftNetRoutingRuleObj : validatedSRRs) {
+			
+			String rn = swiftNetRoutingRuleObj.getRouteName();
+			LOGGER.info("Trying to save SRR : " + swiftNetRoutingRuleObj.getRouteName());
+			SRRCreateLog log = new SRRCreateLog();		
+			log.setRouteName(rn);
 			try {
-				createSWIFTDirectory(rule);
-			} catch (CreateDirectoryException cde) {
-
-				LOGGER.severe(cde.getMessage());
+				boolean b = swiftNetRoutingRuleObj.saveSWIFTNetRoutingRule(SWIFTNetRoutingRuleObj.INSERT_ACTION);
+				// we'd expect b to be true here, so let's set it in the log
+				log.setSuccessOnCreate(b);
+				log.setCode(201);
+				log.setFailCause(""); // to do..can we suppress this attribute in the JSON where b==true?
+				//LOGGER.info("Adding the log 1 in iterate cands");
+				
+				LOGGER.info("Created SRR with object ID : " + swiftNetRoutingRuleObj.getRouteName());
+			} catch (Exception e) {
+				
+				// something unfortunate happened here
+				LOGGER.severe("Exception trying to save rule : " + swiftNetRoutingRuleObj.getRouteName());
+				LOGGER.severe(e.getMessage());
+				
+				//..and false here, so we can set a fail message
+				log.setSuccessOnCreate(false);
+				log.setFailCause(e.getMessage());
+				log.setCode(400);
+				//LOGGER.info("Adding the log 2 in iterate cands");
+				
+				failCount++;
 			}
-
-			if (finalStatus == statusOKSC) {
-
-				return Response.status(finalStatus).entity(null).build();
-			} else {
-
-				// we got some errors back when we tried to create at least some of the rules
-				Errors createErrs = new Errors();
-				List<Error> eList = new ArrayList<Error>();
-				logs.forEach(log -> {
-					Error e = new Error();
-					e.setMessage(log.getFailCause());
-					e.setAttribute(log.getEntityName());
-					eList.add(e);
-				});
-				createErrs.setErrors(eList);
-				LOGGER.info("Returning some errors : " + eList);
-				return Response.status(finalStatus).entity(createErrs).build();
+			finally {
+				createLogs.appendLog(log);
 			}
-
-			// yes, there was at least one basic type validation error so create a JSON
-			// response back
-		} else {
-			status = validationFailureSC;
-			Error[] ar = errs.toArray(new Error[list.size()]);
-//			
-			return Response.status(status).entity(toErrorResp(list)).build();
+			// append the log if we havent seen it before, whatever it looked like
+			
+			
 		}
 
-	}
-
-	private int getStatus(List<SRRCreateLog> logs) {
-
-		int statusOKSC = 201;
-		int createFailureSC = 404;
-
-		int retval = statusOKSC;
-
-		// do any of the create logs have an error?
-
-		for (SRRCreateLog srrCreateLog : logs) {
-			LOGGER.info("Log : " + srrCreateLog);
-			retval = srrCreateLog.isSuccessOnCreate() ? statusOKSC : createFailureSC;
-
-		}
-		LOGGER.info("Returning status : " + retval);
-
-		return retval;
-
-	}
-
+		// any errors?
+		
+	//	int status=(0==failCount)?Response.Status.
+		
+		LOGGER.info("Errors in create log : " + failCount + " errors of " +validatedSRRs.size() +" candidates.");
+		
+		// now, try to create the dir once for the rule
 	
+		try {
+			Utils.createSWIFTDirectory(rule);
+		} catch (CreateDirectoryException cde) {
+
+			LOGGER.severe(cde.getMessage());
+		}
+	
+		// we always return 200 - the caller should check the codes of each section
+		return Response.status(Status.OK).entity(createLogs.getLogs()).build();
+
+	}
+
+
+
 	/**
 	 * Validate the rule using its annotated constraints
 	 * 
-	 * For each violation, add an Error to the List<Error> passed in
-	 * 	 * 
-	 * @param val The validator
+	 * For each violation, add an Error to the List<Error> passed in *
+	 * 
+	 * @param val  The validator
 	 * @param errs A List <Err - we add to for any error
 	 * @param rule The rule instance to be validated
 	 * @return Void
@@ -186,9 +211,9 @@ public class RoutingRulesRestServer {
 			errs.add(e);
 		});
 
-	
 	}
 
+	
 	private String toErrorResp(Errors list) {
 
 		String json = null;
@@ -224,102 +249,6 @@ public class RoutingRulesRestServer {
 
 		thisLogger.setLevel(Level.INFO);
 		return thisLogger;
-	}
-/**
- * Given a rule object, use the DNs and the base storage path to create a directory
- * 
- * Throw an exception if the dir cannot be created.
- * 
- * If the dir already exists, nothing happens - the existing directory is untouched
- * 
- * @param rule
- * @throws CreateDirectoryException
- */
-	private void createSWIFTDirectory(RoutingRule rule) throws CreateDirectoryException {
-
-		final String reqDN = rule.getRequestorDN();
-		final String respDN = rule.getResponderDN();
-		boolean dirCreated=false;
-
-		final String dirToCreate = Utils.createSWIFTDirectoryPath(reqDN, respDN);
-		final String basePath=Manager.getProperties("sfg").getProperty("sharedstorage.path");
-
-		File swiftDir = new File(basePath + File.separator + dirToCreate);
-		
-		
-		// does it exist already?
-		boolean dirExists = swiftDir.exists();
-
-		
-		//if so, just log and return
-		
-		if (dirExists) {
-			
-			LOGGER.info("SWIFT dir at " + dirToCreate+" already exists, so not creating it.");
-			return;
-		}
-		
-		// it doesn't exist, so let's try to create it
-		if (!swiftDir.exists()) {
-			
-			dirCreated = swiftDir.mkdirs();
-		}
-		
-		//were we successful?
-		if (dirCreated) {
-			
-			//yes
-			LOGGER.info("Created new directory at " +dirToCreate);
-			return;
-		}
-		else {
-			
-			//no
-			throw new CreateDirectoryException("Could not create dir at : " +dirToCreate);
-			
-		}
-		
-	
-		/*
-		 * try { InitialWorkFlowContext iwfc = new InitialWorkFlowContext();
-		 * WorkFlowContext wfc = new WorkFlowContext();
-		 * 
-		 * wfc.setWFContent("SwiftDirectory", dirToCreate); Document
-		 * primaryDocumentOutput = wfc.newDocument();
-		 * 
-		 * // how do i set name/values. xml etc in the primary? //
-		 * primaryDocumentOutput. ???
-		 * 
-		 * 
-		 * 
-		 * /* if(bool){ System.out.println("Directory created successfully"); }else{
-		 * System.out.println("Sorry couldn’t create specified directory"); }
-		 * 
-		 * XMLDOMWriter xmlDOMWriter = new XMLDOMWriter( new PrintWriter(new
-		 * OutputStreamWriter(primaryDocumentOutput.getOutputStream(), "UTF-8")));
-		 * xmlDOMWriter.write(docString); xmlDOMWriter.flush(); xmlDOMWriter.close();
-		 * iwfc.putPrimaryDocument(primaryDocumentOutput);
-		 * 
-		 * iwfc.setWorkFlowName("HelloWorld");
-		 * 
-		 * iwfc.start();
-		 * 
-		 * } catch (InitialWorkFlowContextException iwcf) {
-		 * 
-		 * throw new CreateDirectoryException("Unable to create SWIFT Dir " +
-		 * dirToCreate + " : " + iwcf.getMessage()); }
-		 * 
-		 * 
-		 * catch (IOException ioe) {
-		 * 
-		 * throw new CreateDirectoryException("Unable to create SWIFT Dir " +
-		 * dirToCreate + " : " + ioe.getMessage()); }
-		 * 
-		 * /*catch (SQLException sqlE) {
-		 * 
-		 * throw new CreateDirectoryException("Unable to create SWIFT Dir " +
-		 * dirToCreate + " : " + sqlE.getMessage()); }
-		 */
 	}
 
 }

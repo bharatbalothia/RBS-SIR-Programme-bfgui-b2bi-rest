@@ -8,29 +8,26 @@ public class SSROBuilderTest {
 
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
-		RoutingRule r = new RoutingRule();
-		r.setActionType("BP");
-		r.setPriority(1);
-		r.setInvokeMode("SYNC");
-		r.setRequestorDN("");
-		r.setResponderDN("");
-		r.setRequestType(new String[]{"MT202.PM"});
-		r.setEntityName("");
-		r.setService("");
-		r.setUsername("ASmith");
+		RoutingRule rule = new RoutingRule();
+		
+		rule.setRequestorDN("");
+		rule.setResponderDN("");
+		rule.setRequestType(new String[]{"MT202.PM"});
+		rule.setEntityName("");
+		rule.setService("");
+		rule.setUsername("ASmith");
 
 		SWIFTNetRoutingRuleObj swiftRule = new SWIFTRoutingRule.Builder()
-				.withActionType(r.getActionType())
-				.withPriority(r.getPriority())
-				.withService(r.getService())
-				.withInvokeMode(r.getInvokeMode())
-				.withRequestType(r.getRequestType()[0])
-				.withRequestorDN(r.getRequestorDN())
-				.withResponderDN(r.getResponderDN())
-				.withWorkflowName(r.getRequestType()[0])
-				.toRouteName(r.getEntityName(), r.getRequestType()[0])
+				.withActionType("BP")
+				.withService(rule.getService())
+				.withInvokeMode("SYNC")
+				.withRequestType(rule.getRequestType()[0])
+				.withRequestorDN(rule.getRequestorDN())
+				.withResponderDN(rule.getResponderDN())
+				.withWorkflowName(rule.getRequestType()[0])
+				.toRouteName(rule.getEntityName(), rule.getRequestType()[0])
 				.build();
-	
+		System.out.println(swiftRule);
 	}
 
 }
