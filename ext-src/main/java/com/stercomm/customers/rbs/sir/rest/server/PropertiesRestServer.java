@@ -59,6 +59,7 @@ public class PropertiesRestServer{
 
 	}
 	
+	
 	private Logger setupLogging(boolean logToConsole, String logFile) throws Exception {
 		// Setup the logging
 		System.setProperty("java.util.logging.SimpleFormatter.format", FORMAT_STRING);
