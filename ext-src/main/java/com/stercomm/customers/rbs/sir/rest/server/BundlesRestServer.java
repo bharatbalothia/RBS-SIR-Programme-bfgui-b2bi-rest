@@ -5,6 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;
@@ -21,16 +22,16 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
-import com.stercomm.customers.rbs.sir.rest.domain.Bundle;
+import com.stercomm.customers.rbs.sir.rest.domain.BundleIDs;
 import com.stercomm.customers.rbs.sir.rest.domain.Error;
 import com.sterlingcommerce.woodstock.util.frame.jdbc.Conn;
 
 @Path("/bundles")
-public class BundlesRestServer{
+public class BundlesRestServer {
 
 	private static Logger LOGGER = Logger.getLogger(BundlesRestServer.class.getName());
 	private static final String FORMAT_STRING = "%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS %4$s %2$s %5$s%6$s%n";
-	
+
 	@PostConstruct
 	private void init() {
 
@@ -43,60 +44,76 @@ public class BundlesRestServer{
 
 	}
 
-
 	@POST
 	@Path("/")
 	@Produces(MediaType.APPLICATION_JSON)
-	public Response redeliverBundle(Bundle bundle) {
-		
-		long bundleID = bundle.getBundleID();
-		
-		LOGGER.info("Attempting redelivery for  : " +bundleID);
-		
-		// get the delivery key
-		LOGGER.info("Looking for delivery key for  : " +bundleID);
-		String delKey = getDeliveryKey(bundleID);
+	public Response getArrivedFileKeys(BundleIDs bundle) {
 
-		if (null == delKey) {
-			final String errText = "No delivery key found for  : " +bundleID;
+		long[] bundleIDs = bundle.getBundleID();
+
+		String ids = Arrays.toString(bundleIDs);
+		LOGGER.info("Attempting redelivery for  : " + ids);
+
+		// get the delivery key
+		LOGGER.info("Looking for delivery key for  : " + ids);
+		setArrivedFileKeys(bundle);
+
+		if (bundle.getArrivedFileKey().length == 0) {
+			final String errText = "No delivery keys found for  : " + ids;
 			LOGGER.severe(errText);
 			Error e = new Error();
 			e.setMessage(errText);
 			e.setAttribute("bundleID");
 			return Response.status(Status.BAD_REQUEST).entity(e).build();
 		}
-		// we have a delivery key...is it a duplicate?
-		
-		// 
-		return Response.status(Status.OK).entity(null).build();
-		
+
+		return Response.status(Status.OK).entity(bundle).build();
+
 	}
-	
+
 	/**
-	 * retrieve the delivery key for the bundle ID
+	 * retrieve the arruved file keys for the bundle IDs in te bundle
+	 * and set them in a parallel string array
 	 * 
-	 * @param bundleID
+	 * the key array element is set to null if arrived file key is not found
+	 * 
+	 * @param b the bundleIDs 
 	 * @return the key or null if not found
 	 */
-	private String getDeliveryKey(long bundleID) {
+	private void setArrivedFileKeys(BundleIDs b) {
 		
 		Connection conn=null;
 		PreparedStatement spstmt = null;
-		final String ssqlStr = "select delivery_key from FB_SFGLEGACY_LINK where bundle_id = ?";
+		final String ssqlStr = "select ARRIVEDFILE_KEY from FG_ROUTE where "
+				+ "ROUTE_KEY=(select ROUTE_KEY from FG_DELIVERY where DELIVERY_KEY="
+				+ "(select delivery_key from FB_SFGLEGACY_LINK where bundle_id = ?))";
 		ResultSet rs = null;
-		String key = null;
+	
+		
+		b.setArrivedFileKey(new String[b.getBundleID().length]);
 
 		try {
 
 			conn = Conn.getConnection();
-			spstmt = conn.prepareStatement(ssqlStr);
-			spstmt.setLong(1, bundleID);
-
-			rs = spstmt.executeQuery();
-			boolean b = rs.first();
-			if (b) {
-				key=rs.getString(1);
+			
+			long[] ids = b.getBundleID();
+			
+			for (int i = 0; i < ids.length; i++) {
+				
+				spstmt = conn.prepareStatement(ssqlStr);
+				spstmt.setLong(1, ids[i]);
+				LOGGER.severe("Executing arrived file query for bundle id: " +ids[i]);
+				rs = spstmt.executeQuery();
+				if (rs.next()){ // first row of 1, we hope
+					b.getArrivedFileKey()[i]=rs.getString(1).trim();
+				}
+				else {
+					LOGGER.info("No arrived file key found for bundle id: " +ids[i]);
+				}
+				spstmt.clearParameters();
+				
 			}
+			
 		
 		} catch (Exception e) {
 			LOGGER.severe("SQL Error searching the FB LegacyLink table : "+ e.getMessage());
@@ -116,9 +133,9 @@ public class BundlesRestServer{
 				LOGGER.severe("SQL exception : " +se.getMessage());
 			}
 		}
-		return key;
+		return;
 	}
-	
+
 	private Logger setupLogging(boolean logToConsole, String logFile) throws Exception {
 		// Setup the logging
 		System.setProperty("java.util.logging.SimpleFormatter.format", FORMAT_STRING);
