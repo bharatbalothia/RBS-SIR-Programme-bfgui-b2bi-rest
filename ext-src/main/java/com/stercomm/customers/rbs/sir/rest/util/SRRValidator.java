@@ -26,9 +26,11 @@ public class SRRValidator {
 			// case 1. does the route exist by name?  
 			String routeName = swiftNetRoutingRuleObj.getRouteName();
 			String existsByName = swiftNetRoutingRuleObj.checkExistsByName(routeName);
+			// case 2 or with similar properties
+			String existingSimilarRuleID = swiftNetRoutingRuleObj.exists(swiftNetRoutingRuleObj.getRequestor(),swiftNetRoutingRuleObj.getResponder(),swiftNetRoutingRuleObj.getService(),swiftNetRoutingRuleObj.getRequestType());
 
 			if (null != existsByName) {
-				LOGGER.severe("A route called " + routeName +" already exists..skipping this SRR candidate.");
+				LOGGER.severe("A rule called " + routeName +" already exists..skipping this SRR candidate.");
 				SRRCreateLog alreadyExistsLog = new SRRCreateLog();
 				alreadyExistsLog.setFailCause("A route already exists with this name.");
 				alreadyExistsLog.setSuccessOnCreate(false);
@@ -39,6 +41,18 @@ public class SRRValidator {
 				
 			} 
 			// case 2...?
+			else if (null!=existingSimilarRuleID) {
+				
+				String msg = "A rule called " + routeName +" was not found, but a rule exists already with the same parameters.";
+				LOGGER.severe(msg);
+				SRRCreateLog alreadyExistsLog = new SRRCreateLog();
+				alreadyExistsLog.setFailCause(msg);
+				alreadyExistsLog.setSuccessOnCreate(false);
+				alreadyExistsLog.setRouteName(routeName);
+				alreadyExistsLog.setCode(409); //conflict
+				LOGGER.info("Adding the log in validate");
+				logs.appendLog(alreadyExistsLog);
+			}
 	
 			else {
 				LOGGER.info("SRR passed validation, queueing for create : " + routeName);
