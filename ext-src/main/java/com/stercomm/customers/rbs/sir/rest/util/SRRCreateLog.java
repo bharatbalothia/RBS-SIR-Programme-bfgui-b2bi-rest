@@ -10,9 +10,9 @@ public class SRRCreateLog {
 	
 	@Override
 	public String toString() {
-		return "SRRCreateLog [routeName=" + routeName + ", successOnCreate=" + successOnCreate + ", failCause=" + failCause + "]";
+		return "SRRCreateLog [routeName=" + routingRuleName + ", successOnCreate=" + successOnCreate + ", failCause=" + failCause + "]";
 	}
-	private String routeName;
+	private String routingRuleName;
 	private boolean successOnCreate;
 	
 	//@XmlAttribute(required=true)
@@ -27,11 +27,11 @@ public class SRRCreateLog {
 	public void setCode(int code) {
 		this.code = code;
 	}
-	public String getRouteName() {
-		return routeName;
+	public String getRoutingRuleName() {
+		return routingRuleName;
 	}
-	public void setRouteName(String routeName) {
-		this.routeName = routeName;
+	public void setRoutingRuleName(String routingRuleName) {
+		this.routingRuleName = routingRuleName;
 	}
 	
 	

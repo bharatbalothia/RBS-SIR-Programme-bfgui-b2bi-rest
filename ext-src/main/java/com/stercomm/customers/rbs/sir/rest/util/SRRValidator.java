@@ -34,7 +34,7 @@ public class SRRValidator {
 				SRRCreateLog alreadyExistsLog = new SRRCreateLog();
 				alreadyExistsLog.setFailCause("A route already exists with this name.");
 				alreadyExistsLog.setSuccessOnCreate(false);
-				alreadyExistsLog.setRouteName(routeName);
+				alreadyExistsLog.setRoutingRuleName(routeName);
 				alreadyExistsLog.setCode(409); //conflict
 				LOGGER.info("Adding the log in validate");
 				logs.appendLog(alreadyExistsLog);
@@ -48,7 +48,7 @@ public class SRRValidator {
 				SRRCreateLog alreadyExistsLog = new SRRCreateLog();
 				alreadyExistsLog.setFailCause(msg);
 				alreadyExistsLog.setSuccessOnCreate(false);
-				alreadyExistsLog.setRouteName(routeName);
+				alreadyExistsLog.setRoutingRuleName(routeName);
 				alreadyExistsLog.setCode(409); //conflict
 				LOGGER.info("Adding the log in validate");
 				logs.appendLog(alreadyExistsLog);

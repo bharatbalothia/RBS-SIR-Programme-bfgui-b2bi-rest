@@ -1,6 +1,8 @@
 package com.stercomm.customers.rbs.sir.rest.server;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -55,20 +57,32 @@ public class RoutingRulesRestServer extends BaseRestServer {
 	public Response getSWIFTRulesForEntity(@QueryParam("entity-name") String entityName) {
 		LOGGER.info("Got request for GET on rules for entity : " +entityName);
 
-		List<SWIFTNetRoutingRuleObj> rulesList = null;
+		@SuppressWarnings("rawtypes")
+		ArrayList<HashMap> rulesList = null;
+		List<String> namesOnly = new ArrayList<String>();
 		Status retstat = Response.Status.OK;
 		
 		// Get the current list of Routing Rules using the entity name
 		SWIFTNetRoutingRuleObj srroList = new SWIFTNetRoutingRuleObj();
 		String ruleQuery = "GPL_" + entityName + "_%";
 		LOGGER.info("Get request - looking for rules with query : " + ruleQuery);
-
+		
 		try {
 			rulesList = srroList.listByName(ruleQuery, 0, 200, true);
 			int noOfRules = rulesList.size();
 			
 			if (noOfRules>0) {
-					LOGGER.info("Found " + rulesList.size() + " matching rules.");
+				
+				LOGGER.info("Found " + rulesList.size() + " matching rules.");
+				Iterator<HashMap> itrExisting = rulesList.iterator();
+				
+				// the old collections classes are so ugly to use
+				
+				while(itrExisting.hasNext()){
+					HashMap o = (HashMap)itrExisting.next();
+					namesOnly.add((String)o.get("route_name"));
+				}
+		
 			}
 			else {
 				LOGGER.info("Found no matching rules.");
@@ -78,7 +92,7 @@ public class RoutingRulesRestServer extends BaseRestServer {
 			LOGGER.severe(e.getMessage());
 		}
 
-		return Response.status(retstat).entity(rulesList).build();
+		return Response.status(retstat).entity(namesOnly).build();
 	
 
 	}
@@ -281,7 +295,7 @@ public class RoutingRulesRestServer extends BaseRestServer {
 			String rn = swiftNetRoutingRuleObj.getRouteName();
 			LOGGER.info("Trying to save SRR : " + swiftNetRoutingRuleObj.getRouteName());
 			SRRCreateLog log = new SRRCreateLog();
-			log.setRouteName(rn);
+			log.setRoutingRuleName(rn);
 			try {
 				boolean b = swiftNetRoutingRuleObj.saveSWIFTNetRoutingRule(SWIFTNetRoutingRuleObj.INSERT_ACTION);
 				// we'd expect b to be true here, so let's set it in the log
