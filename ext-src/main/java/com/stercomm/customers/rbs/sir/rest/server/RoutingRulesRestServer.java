@@ -8,10 +8,14 @@ import javax.annotation.PostConstruct;
 import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
@@ -48,10 +52,34 @@ public class RoutingRulesRestServer extends BaseRestServer {
 
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
-	public List<RoutingRule> getRules() {
-		LOGGER.info("Got request for GET on rules");
+	public Response getSWIFTRulesForEntity(@QueryParam("entity-name") String entityName) {
+		LOGGER.info("Got request for GET on rules for entity : " +entityName);
 
-		return rules;
+		List<SWIFTNetRoutingRuleObj> rulesList = null;
+		Status retstat = Response.Status.OK;
+		
+		// Get the current list of Routing Rules using the entity name
+		SWIFTNetRoutingRuleObj srroList = new SWIFTNetRoutingRuleObj();
+		String ruleQuery = "GPL_" + entityName + "_%";
+		LOGGER.info("Get request - looking for rules with query : " + ruleQuery);
+
+		try {
+			rulesList = srroList.listByName(ruleQuery, 0, 200, true);
+			int noOfRules = rulesList.size();
+			
+			if (noOfRules>0) {
+					LOGGER.info("Found " + rulesList.size() + " matching rules.");
+			}
+			else {
+				LOGGER.info("Found no matching rules.");
+			}
+		} catch (Exception e) {
+
+			LOGGER.severe(e.getMessage());
+		}
+
+		return Response.status(retstat).entity(rulesList).build();
+	
 
 	}
 	// comment
@@ -94,7 +122,7 @@ public class RoutingRulesRestServer extends BaseRestServer {
 
 		// now we can try to save to BI the ones that survived validation
 		int failCount = saveToBI(validatedSRRs, createLogs);
-     	// any errors?
+		// any errors?
 		LOGGER.info("Errors in create log : " + failCount + " errors of " + validatedSRRs.size() + " candidates.");
 
 		// now, try to create the dir *once* for the rule
@@ -108,6 +136,78 @@ public class RoutingRulesRestServer extends BaseRestServer {
 
 		// we always return 200 - the caller should check the codes of each section
 		return Response.status(Status.OK).entity(createLogs.getLogs()).build();
+
+	}
+
+	@PUT
+	@Path("/update")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces({ "application/json" })
+	public Response updateSWIFTRulesFromRule(RoutingRule rule) {
+
+		List<SWIFTNetRoutingRuleObj> rulesList = null;
+
+		// Get the current list of Routing Rules using the entity name
+		SWIFTNetRoutingRuleObj srroList = new SWIFTNetRoutingRuleObj();
+		String ruleQuery = "GPL_" + rule.getEntityName() + "_%";
+		LOGGER.info("Update request - looking for rules for " + ruleQuery);
+
+		try {
+			rulesList = srroList.listByName(ruleQuery, 0, 200, true);
+			LOGGER.info("Found " + rulesList.size() + " matching rules.");
+
+			for (SWIFTNetRoutingRuleObj swiftNetRoutingRuleObjName : rulesList) {
+				LOGGER.info("Found " + swiftNetRoutingRuleObjName.getRouteName());
+			}
+		} catch (Exception e) {
+
+			LOGGER.severe(e.getMessage());
+		}
+
+		return Response.status(Status.OK).entity(rulesList).build();
+	}
+
+	@DELETE
+	@Path("/delete/{routingrule}")
+	@Produces({ "application/json" })
+	public Response deleteSWIFTRulesFromRule(@PathParam("routingrule") String ruleName) {
+
+		// in case of a 404
+		Error notFound = null;
+
+		// Get the current list of Routing Rules using the entity name
+		SWIFTNetRoutingRuleObj rule = new SWIFTNetRoutingRuleObj();
+
+		LOGGER.info("Delete request - looking for rule : " + ruleName);
+
+		Status retstat = Response.Status.OK;
+
+		try {
+			
+			// get the object ID of the rule with the name
+			String id = rule.exists(ruleName);
+			// if we found it, delete it
+			if ((null != id) && (id != "")) {
+				LOGGER.info("Found " + id);
+				rule.setobjectID(id);
+				rule.saveSWIFTNetRoutingRule(SWIFTNetRoutingRuleObj.DELETE_ACTION);
+
+			} else {
+				// we didnt find it, return 404
+				retstat = Status.NOT_FOUND;
+				notFound = new Error();
+				notFound.setAttribute("routingrule");
+				notFound.setMessage("Rule not found with name "+ ruleName);
+				
+				LOGGER.severe("No such rule to delete with name :  " + ruleName);
+			}
+
+		} catch (Exception e) {
+			LOGGER.severe("Caught exception deleting the SWIFTNet Routing Rule: " + e.getMessage());
+
+		}
+
+		return Response.status(retstat).entity(notFound!=null?notFound:null).build();
 
 	}
 
@@ -157,15 +257,15 @@ public class RoutingRulesRestServer extends BaseRestServer {
 					.withService(rule.getService()).withInvokeMode("SYNC").withRequestType(rule.getRequestType()[i])
 					.withWorkflowName(rule.getRequestType()[i]).withRequestorDN(rule.getRequestorDN())
 					.withResponderDN(rule.getResponderDN()).toRouteName(rule.getEntityName(), rule.getRequestType()[i])
-					.build();
+					.withPriority(0).build();
 			retval.add(swiftRule);
 		}
 		return retval;
 	}
 
 	/**
-	 * Save the list to BI, update success or failure into the createLogs object, and
-	 * return a count of fails.
+	 * Save the list to BI, update success or failure into the createLogs object,
+	 * and return a count of fails.
 	 * 
 	 * 
 	 * @param validatedSRRs
@@ -199,16 +299,15 @@ public class RoutingRulesRestServer extends BaseRestServer {
 				log.setSuccessOnCreate(false);
 				log.setFailCause(e.getMessage());
 				log.setCode(400);
-			
+
 				failCount++;
 			} finally {
 				createLogs.appendLog(log);
 			}
 
-			
-
 		}
-		
+
 		return failCount;
 	}
+
 }
