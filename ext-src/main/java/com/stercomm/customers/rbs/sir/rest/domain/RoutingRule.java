@@ -76,7 +76,7 @@ public class RoutingRule {
 
 	@NotNull(message="Field cannot be null")
 	@NotEmpty(message="Field cannot be empty")
-	//@Pattern(regexp = "/(?:(?:(?:(?:cn|ou)=[^,]+,?)+),[\\s]*)+(?:o=[a-z]{6}[0-9a-z]{2}){1},[\\s]*o=swift/",message="Field does not match SWIFT pattern validation")
+	@Pattern(regexp = "^(?:(?:(?:(?:cn|ou)=[^,]+,?)+),[\\s]*)*(?:o=[a-z]{6}[0-9a-z]{2}){1},[\\s]*o=swift$",message="Field does not match DN pattern validation")
 	private String responderDN;
 
 	@NotNull(message = "Field cannot be null")
