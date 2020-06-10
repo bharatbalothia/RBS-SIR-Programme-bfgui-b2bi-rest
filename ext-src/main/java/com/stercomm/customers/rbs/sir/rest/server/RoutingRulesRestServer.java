@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
@@ -27,6 +29,7 @@ import com.stercomm.customers.rbs.sir.rest.domain.Errors;
 import com.stercomm.customers.rbs.sir.rest.domain.RoutingRule;
 import com.stercomm.customers.rbs.sir.rest.domain.SWIFTRoutingRule;
 import com.stercomm.customers.rbs.sir.rest.exception.CreateDirectoryException;
+import com.stercomm.customers.rbs.sir.rest.util.RuleMap;
 import com.stercomm.customers.rbs.sir.rest.util.SRRCreateLog;
 import com.stercomm.customers.rbs.sir.rest.util.SRRCreateLogs;
 import com.stercomm.customers.rbs.sir.rest.util.SRRValidator;
@@ -55,36 +58,35 @@ public class RoutingRulesRestServer extends BaseRestServer {
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
 	public Response getSWIFTRulesForEntity(@QueryParam("entity-name") String entityName) {
-		LOGGER.info("Got request for GET on rules for entity : " +entityName);
+		LOGGER.info("Got request for GET on rules for entity : " + entityName);
 
 		@SuppressWarnings("rawtypes")
 		ArrayList<HashMap> rulesList = null;
 		List<String> namesOnly = new ArrayList<String>();
 		Status retstat = Response.Status.OK;
-		
+
 		// Get the current list of Routing Rules using the entity name
 		SWIFTNetRoutingRuleObj srroList = new SWIFTNetRoutingRuleObj();
 		String ruleQuery = "%_" + entityName + "_%";
 		LOGGER.info("Get request - looking for rules with query : " + ruleQuery);
-		
+
 		try {
 			rulesList = srroList.listByName(ruleQuery, 0, 200, true);
 			int noOfRules = rulesList.size();
-			
-			if (noOfRules>0) {
-				
+
+			if (noOfRules > 0) {
+
 				LOGGER.info("Found " + rulesList.size() + " matching rules.");
 				Iterator<HashMap> itrExisting = rulesList.iterator();
-				
+
 				// the old collections classes are so ugly to use
-				
-				while(itrExisting.hasNext()){
-					HashMap o = (HashMap)itrExisting.next();
-					namesOnly.add((String)o.get("route_name"));
+
+				while (itrExisting.hasNext()) {
+					HashMap o = (HashMap) itrExisting.next();
+					namesOnly.add((String) o.get("route_name"));
 				}
-		
-			}
-			else {
+
+			} else {
 				LOGGER.info("Found no matching rules.");
 			}
 		} catch (Exception e) {
@@ -93,7 +95,6 @@ public class RoutingRulesRestServer extends BaseRestServer {
 		}
 
 		return Response.status(retstat).entity(namesOnly).build();
-	
 
 	}
 	// comment
@@ -153,32 +154,37 @@ public class RoutingRulesRestServer extends BaseRestServer {
 
 	}
 
+	/**
+	 * PUT - given the same params as post
+	 * 
+	 * 1. validate the post 2. if ok, first search for all rules for the entity, add
+	 * to a HashSet on RR name (rrs=a,c,e, old=a,c,e, req = a,b,d) 3. then create a
+	 * new collection of RRs, based on the new rule, into a HashSet on RR name
+	 * (rrs=a,c,e, old=a,c,e, (new=d,a,b)) 4. foreach rule in the "old" set not in
+	 * the new set, delete it (rrs=a, old=a,c,e), (new=a,b,d)) 5. foreach rule in
+	 * the "new" set not in the old set, add it (rrs=a,b,d) 6. foreach rule in the
+	 * "new" set, if the sub-dir does not exist, create it
+	 * 
+	 * 
+	 * @param rule
+	 * @return
+	 */
 	@PUT
 	@Path("/update")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces({ "application/json" })
 	public Response updateSWIFTRulesFromRule(RoutingRule rule) {
 
-		List<SWIFTNetRoutingRuleObj> rulesList = null;
-
 		// Get the current list of Routing Rules using the entity name
-		SWIFTNetRoutingRuleObj srroList = new SWIFTNetRoutingRuleObj();
-		String ruleQuery = "GPL_" + rule.getEntityName() + "_%";
-		LOGGER.info("Update request - looking for rules for " + ruleQuery);
+		// we get routing rule name and Object ID
 
-		try {
-			rulesList = srroList.listByName(ruleQuery, 0, 200, true);
-			LOGGER.info("Found " + rulesList.size() + " matching rules.");
+		Map<String, String> currentRuleset = createMapOfIDs(rule);
 
-			for (SWIFTNetRoutingRuleObj swiftNetRoutingRuleObjName : rulesList) {
-				LOGGER.info("Found " + swiftNetRoutingRuleObjName.getRouteName());
-			}
-		} catch (Exception e) {
+		// now create the new list (which also creates the rules)
+		
+		List<SWIFTNetRoutingRuleObj> newRules = populateRules(rule);
 
-			LOGGER.severe(e.getMessage());
-		}
-
-		return Response.status(Status.OK).entity(rulesList).build();
+		return Response.status(Status.OK).entity(currentRuleset).build();
 	}
 
 	@DELETE
@@ -197,7 +203,7 @@ public class RoutingRulesRestServer extends BaseRestServer {
 		Status retstat = Response.Status.OK;
 
 		try {
-			
+
 			// get the object ID of the rule with the name
 			String id = rule.exists(ruleName);
 			// if we found it, delete it
@@ -211,8 +217,8 @@ public class RoutingRulesRestServer extends BaseRestServer {
 				retstat = Status.NOT_FOUND;
 				notFound = new Error();
 				notFound.setAttribute("routingrule");
-				notFound.setMessage("Rule not found with name "+ ruleName);
-				
+				notFound.setMessage("Rule not found with name " + ruleName);
+
 				LOGGER.severe("No such rule to delete with name :  " + ruleName);
 			}
 
@@ -221,7 +227,7 @@ public class RoutingRulesRestServer extends BaseRestServer {
 
 		}
 
-		return Response.status(retstat).entity(notFound!=null?notFound:null).build();
+		return Response.status(retstat).entity(notFound != null ? notFound : null).build();
 
 	}
 
@@ -270,8 +276,9 @@ public class RoutingRulesRestServer extends BaseRestServer {
 			SWIFTNetRoutingRuleObj swiftRule = new SWIFTRoutingRule.Builder().withActionType("BP")
 					.withService(rule.getService()).withInvokeMode("SYNC").withRequestType(rule.getRequestType()[i])
 					.withWorkflowName(rule.getRequestType()[i]).withRequestorDN(rule.getRequestorDN())
-					.withResponderDN(rule.getResponderDN()).toRouteName(rule.getEntityName(), rule.getRequestType()[i], rule.getEntityType())
-					.withPriority(0).build();
+					.withResponderDN(rule.getResponderDN())
+					.toRouteName(rule.getEntityName(), rule.getRequestType()[i], rule.getEntityType()).withPriority(0)
+					.build();
 			retval.add(swiftRule);
 		}
 		return retval;
@@ -322,6 +329,45 @@ public class RoutingRulesRestServer extends BaseRestServer {
 		}
 
 		return failCount;
+	}
+
+	/**
+	 * create a HashMap with existing rules : name and ID
+	 * 
+	 */
+	private HashMap<String, String> createMapOfIDs(RoutingRule rule) {
+
+		HashMap<String, String> retval = new HashMap<String, String>();
+
+		// Get the current list of Routing Rules using the entity name
+		String ruleQuery = "%_" + rule.getEntityName() + "_%";
+		SWIFTNetRoutingRuleObj srroList = new SWIFTNetRoutingRuleObj();
+		ArrayList rulesList = null;
+		try {
+			rulesList = srroList.listByName(ruleQuery, 0, 200, true);
+			LOGGER.info("Found " + rulesList.size() + " existing matching rules.");
+
+			int noOfRules = rulesList.size();
+
+			if (noOfRules > 0) {
+
+				LOGGER.info("Found " + rulesList.size() + " matching rules.");
+				Iterator<HashMap> itrExisting = rulesList.iterator();
+
+				// the old collections classes are so ugly to use
+
+				while (itrExisting.hasNext()) {
+					HashMap o = (HashMap) itrExisting.next();
+					retval.put((String) o.get("route_name"), (String) o.get("objectID"));
+				}
+
+			}
+		} catch (Exception e) {
+
+			LOGGER.severe(e.getMessage());
+		}
+
+		return retval;
 	}
 
 }
