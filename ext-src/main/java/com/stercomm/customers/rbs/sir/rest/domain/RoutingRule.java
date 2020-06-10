@@ -90,6 +90,19 @@ public class RoutingRule {
 	@NotNull(message = "Field cannot be null")
 	@NotEmpty(message = "Field cannot be empty")
 	private String username;
+	
+	@NotNull(message = "Field cannot be null")
+	@NotEmpty(message = "Field cannot be empty")
+	@Pattern(regexp = "gpl|sct", flags = Pattern.Flag.CASE_INSENSITIVE, message="Value must be GPL or SCT")
+	private String entityType;
+
+	public String getEntityType() {
+		return entityType;
+	}
+
+	public void setEntityType(String entityType) {
+		this.entityType = entityType;
+	}
 
 	private boolean commit = true;
 

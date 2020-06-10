@@ -64,7 +64,7 @@ public class RoutingRulesRestServer extends BaseRestServer {
 		
 		// Get the current list of Routing Rules using the entity name
 		SWIFTNetRoutingRuleObj srroList = new SWIFTNetRoutingRuleObj();
-		String ruleQuery = "GPL_" + entityName + "_%";
+		String ruleQuery = "%_" + entityName + "_%";
 		LOGGER.info("Get request - looking for rules with query : " + ruleQuery);
 		
 		try {
@@ -270,7 +270,7 @@ public class RoutingRulesRestServer extends BaseRestServer {
 			SWIFTNetRoutingRuleObj swiftRule = new SWIFTRoutingRule.Builder().withActionType("BP")
 					.withService(rule.getService()).withInvokeMode("SYNC").withRequestType(rule.getRequestType()[i])
 					.withWorkflowName(rule.getRequestType()[i]).withRequestorDN(rule.getRequestorDN())
-					.withResponderDN(rule.getResponderDN()).toRouteName(rule.getEntityName(), rule.getRequestType()[i])
+					.withResponderDN(rule.getResponderDN()).toRouteName(rule.getEntityName(), rule.getRequestType()[i], rule.getEntityType())
 					.withPriority(0).build();
 			retval.add(swiftRule);
 		}

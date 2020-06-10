@@ -8,18 +8,19 @@ import com.sterlingcommerce.woodstock.util.frame.Manager;
 
 /**
  * 
- * A builder implementation to wrap the SRR create in something more flexible.  Some logic to look up
- * against properties for workflow name and resolved request type
+ * A builder implementation to wrap the SRR create in something more flexible.
+ * Some logic to look up against properties for workflow name and resolved
+ * request type
  * 
  * @author PETERGreaves
  *
  */
 public class SWIFTRoutingRule {
-	
+
 	private static Logger LOGGER = Logger.getLogger(RoutingRulesRestServer.class.getName());
 
 	public static class Builder {
-	
+
 		private String requestorDN;
 		private String responderDN;
 		private String service;
@@ -30,12 +31,10 @@ public class SWIFTRoutingRule {
 		private String routeName;
 		private String userName;
 		private int priority;
-		
 
 		public Builder() {
 
 		}
-
 
 		public Builder withService(String service) {
 
@@ -53,7 +52,7 @@ public class SWIFTRoutingRule {
 
 		public Builder withWorkflowName(String unresolvedRequestType) {
 
-			//resolve the unresolved request name to a workflow type
+			// resolve the unresolved request name to a workflow type
 			this.workflowName = getWorkflowName(unresolvedRequestType);
 
 			return this;
@@ -83,23 +82,27 @@ public class SWIFTRoutingRule {
 			this.invokeMode = invokeMode;
 			return this;
 		}
-		
-		public Builder toRouteName(String entityName, String unresolvedRequestType) {
-			
-			final String prefix=Manager.getProperties("GPL").getProperty("route.name.prefix");
-			final String suffix=Manager.getProperties("GPL").getProperty("route.name.suffix");
+
+		public Builder toRouteName(String entityName, String unresolvedRequestType, String entityType) {
+
+			// switch prefix based onm the entityType
+			String prefix = entityType.equalsIgnoreCase("GPL")
+					? Manager.getProperties("GPL").getProperty("route.name.prefix.gpl")
+					: Manager.getProperties("GPL").getProperty("route.name.prefix.default");
+			final String suffix = Manager.getProperties("GPL").getProperty("route.name.suffix");
 			final String sep = Manager.getProperties("GPL").getProperty("route.name.separator");
-			
-			this.routeName= prefix + entityName + sep + unresolvedRequestType + suffix;
+
+			this.routeName = prefix + entityName + sep + unresolvedRequestType + suffix;
 			return this;
-			
+
 		}
+
 		public Builder withUserName(String userName) {
 
 			this.userName = userName;
 			return this;
 		}
-		
+
 		public Builder withPriority(int p) {
 
 			this.priority = p;
@@ -109,7 +112,7 @@ public class SWIFTRoutingRule {
 		public SWIFTNetRoutingRuleObj build() {
 
 			SWIFTNetRoutingRuleObj srro = new SWIFTNetRoutingRuleObj();
-			
+
 			srro.setService(this.service);
 			srro.setRequestType(this.requestType);
 			srro.setWorkflowName(this.workflowName);
@@ -120,7 +123,7 @@ public class SWIFTRoutingRule {
 			srro.setRouteName(this.routeName);
 			srro.setUsername(this.userName);
 			srro.setPriority(this.priority);
-			
+
 			return srro;
 		}
 
@@ -133,11 +136,10 @@ public class SWIFTRoutingRule {
 		private String resolvedRequestType(String s) {
 
 			// resolve the request type
-			
 
 			LOGGER.info("Establishing the resolved request type from : " + s);
 			String resolvedReqType = Manager.getProperties("GPL").getProperty("ui.rtm." + s);
-			
+
 			if (resolvedReqType == null || resolvedReqType.equalsIgnoreCase("")) {
 				resolvedReqType = s.replaceAll(".", "");
 
@@ -147,10 +149,10 @@ public class SWIFTRoutingRule {
 		}
 
 		private String getWorkflowName(String requestType) {
-			
-			// resolve the request type to a workflow (BP) name 
+
+			// resolve the request type to a workflow (BP) name
 			// or use the default
-			
+
 			LOGGER.info("Establishing the workflow name from request type : " + requestType);
 
 			String s = Manager.getProperties("GPL").getProperty("route." + requestType);
@@ -159,9 +161,8 @@ public class SWIFTRoutingRule {
 				String wf = Manager.getProperties("GPL").getProperty("routingrule.default.workflow");
 				LOGGER.info("No workflow match in properties : using default workflow name (" + wf + ")");
 				s = wf;
-			}
-			else {
-				
+			} else {
+
 				LOGGER.info("Resolved request-type specific workflow to : " + s);
 			}
 
