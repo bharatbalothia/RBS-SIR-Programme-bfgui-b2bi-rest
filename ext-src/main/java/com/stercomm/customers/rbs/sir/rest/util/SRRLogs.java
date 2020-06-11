@@ -17,19 +17,19 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement
 public class SRRLogs {
 
-	private List<SRRCreateLog> logs;
+	private List<SRRLog> logs;
 	
-	public List<SRRCreateLog> getLogs() {
+	public List<SRRLog> getLogs() {
 		return logs;
 	}
 
 	@XmlElementWrapper
 	@XmlElement(name = "logs")
-	public List<SRRCreateLog> getSRRCreateLogs() {
+	public List<SRRLog> getSRRLogs() {
 		return logs;
 	}
 
-	public void setLogs(List<SRRCreateLog> _logs) {
+	public void setLogs(List<SRRLog> _logs) {
 		this.logs = _logs;
 	}
 
@@ -40,12 +40,12 @@ public class SRRLogs {
 	 * @param newLog
 	 */
 	
-	public void appendLog(SRRCreateLog newLog) {
+	public void appendLog(SRRLog newLog) {
 
 		// lazy init
 		if (logs == null) {
 
-			logs = new ArrayList<SRRCreateLog>();
+			logs = new ArrayList<SRRLog>();
 		}
 		logs.add(newLog);
 	}
@@ -55,12 +55,12 @@ public class SRRLogs {
 	 * 
 	 * @param newLogs
 	 */
-	public void appendLogs(List<SRRCreateLog> newLogs) {
+	public void appendLogs(List<SRRLog> newLogs) {
 
 		// lazy init
 		if (logs == null) {
 
-			logs = new ArrayList<SRRCreateLog>();
+			logs = new ArrayList<SRRLog>();
 		}
 		logs.addAll(newLogs);
 	}

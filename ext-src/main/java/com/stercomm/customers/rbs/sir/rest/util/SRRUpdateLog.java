@@ -13,6 +13,14 @@ public class SRRUpdateLog extends SRRLog{
 		return "SRRCreateLog [routeName=" + this.getRoutingRuleName() + ", updateAction=" + updateAction + ", failCause=" + this.getFailCause()+ ", code=" + this.getCode()+"]";
 	}
 	
+	public String getUpdateAction() {
+		return updateAction;
+	}
+
+	public void setUpdateAction(String updateAction) {
+		this.updateAction = updateAction;
+	}
+
 	private String updateAction;
 	
 

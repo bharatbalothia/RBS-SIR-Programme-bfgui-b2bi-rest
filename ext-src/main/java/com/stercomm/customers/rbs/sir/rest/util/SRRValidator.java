@@ -31,9 +31,9 @@ public class SRRValidator {
 
 			if (null != existsByName) {
 				LOGGER.severe("A rule called " + routeName +" already exists..skipping this SRR candidate.");
-				SRRCreateLog alreadyExistsLog = new SRRCreateLog();
+				SRRUpdateLog alreadyExistsLog = new SRRUpdateLog();
 				alreadyExistsLog.setFailCause("A route already exists with this name.");
-				alreadyExistsLog.setSuccessOnCreate(false);
+				alreadyExistsLog.setUpdateAction("create");
 				alreadyExistsLog.setRoutingRuleName(routeName);
 				alreadyExistsLog.setCode(409); //conflict
 				LOGGER.info("Adding the log in validate");
@@ -45,9 +45,9 @@ public class SRRValidator {
 				
 				String msg = "A rule called " + routeName +" was not found, but a rule exists already with the same parameters.";
 				LOGGER.severe(msg);
-				SRRCreateLog alreadyExistsLog = new SRRCreateLog();
+				SRRUpdateLog alreadyExistsLog = new SRRUpdateLog();
 				alreadyExistsLog.setFailCause(msg);
-				alreadyExistsLog.setSuccessOnCreate(false);
+				alreadyExistsLog.setUpdateAction("create");
 				alreadyExistsLog.setRoutingRuleName(routeName);
 				alreadyExistsLog.setCode(409); //conflict
 				LOGGER.info("Adding the log in validate");
