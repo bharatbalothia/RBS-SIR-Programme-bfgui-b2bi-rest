@@ -17,7 +17,7 @@ public class SRRValidator {
 
 	private static Logger LOGGER = Logger.getLogger(RoutingRulesRestServer.class.getName());
 
-	public List<SWIFTNetRoutingRuleObj> validatedList(List<SWIFTNetRoutingRuleObj> in, SRRCreateLogs logs) {
+	public List<SWIFTNetRoutingRuleObj> validatedList(List<SWIFTNetRoutingRuleObj> in, SRRLogs logs) {
 
 		List<SWIFTNetRoutingRuleObj> listOut = new ArrayList<SWIFTNetRoutingRuleObj>();
 		LOGGER.info("Validation start : SRR candidate count pre-validation : " + in.size());

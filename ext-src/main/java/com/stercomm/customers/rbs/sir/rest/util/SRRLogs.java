@@ -15,7 +15,7 @@ import javax.xml.bind.annotation.XmlRootElement;
  */
 
 @XmlRootElement
-public class SRRCreateLogs {
+public class SRRLogs {
 
 	private List<SRRCreateLog> logs;
 	

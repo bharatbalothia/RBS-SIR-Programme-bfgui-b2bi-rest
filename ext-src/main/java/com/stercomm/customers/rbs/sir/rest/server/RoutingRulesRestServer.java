@@ -2,6 +2,7 @@ package com.stercomm.customers.rbs.sir.rest.server;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +21,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
@@ -31,7 +33,8 @@ import com.stercomm.customers.rbs.sir.rest.domain.SWIFTRoutingRule;
 import com.stercomm.customers.rbs.sir.rest.exception.CreateDirectoryException;
 import com.stercomm.customers.rbs.sir.rest.util.RuleMap;
 import com.stercomm.customers.rbs.sir.rest.util.SRRCreateLog;
-import com.stercomm.customers.rbs.sir.rest.util.SRRCreateLogs;
+import com.stercomm.customers.rbs.sir.rest.util.SRRLogs;
+import com.stercomm.customers.rbs.sir.rest.util.SRRLog;
 import com.stercomm.customers.rbs.sir.rest.util.SRRValidator;
 import com.stercomm.customers.rbs.sir.rest.util.Utils;
 import com.sterlingcommerce.woodstock.ui.SWIFTNetRoutingRuleObj;
@@ -124,7 +127,7 @@ public class RoutingRulesRestServer extends BaseRestServer {
 
 		// what we return to the client if the post validated,
 		// with the result of our attempt to create the SRRs in BI
-		SRRCreateLogs createLogs = new SRRCreateLogs();
+		SRRLogs createLogs = new SRRLogs();
 
 		// create SRRs from this rule
 		List<SWIFTNetRoutingRuleObj> candidateRules = populateRules(rule);
@@ -183,8 +186,30 @@ public class RoutingRulesRestServer extends BaseRestServer {
 		// now create the new list (which also creates the rules)
 		
 		List<SWIFTNetRoutingRuleObj> newRules = populateRules(rule);
+		
+		// add the old names to a set
+		Set<String> currentRRNames = new HashSet<String>();
+		
+		currentRuleset.keySet().forEach( s -> currentRRNames.add(s));
+		
+		// add the new names to a set
+		Set<String> newRRNames = new HashSet<String>();
+		newRules.forEach( o -> newRRNames.add(o.getRouteName()));
+		
+		
+		Set<String> add = new HashSet<String>(newRRNames);
+	    add.removeAll(currentRRNames);
+	    Set<String> remove = new HashSet<String>(currentRRNames);
+	    remove.removeAll(newRRNames);
 
-		return Response.status(Status.OK).entity(currentRuleset).build();
+	   
+		
+		LOGGER.info("current rules : " + currentRRNames);
+		LOGGER.info("new rules : " + newRRNames); 
+		LOGGER.info("Elements to add : " + add);
+		LOGGER.info("Elements to remove : " + remove);
+		
+		return Response.status(Status.OK).entity(null).build();
 	}
 
 	@DELETE
@@ -281,6 +306,7 @@ public class RoutingRulesRestServer extends BaseRestServer {
 					.build();
 			retval.add(swiftRule);
 		}
+		LOGGER.info("Created " + retval.size() +" candidate Routing rules.");
 		return retval;
 	}
 
@@ -293,7 +319,7 @@ public class RoutingRulesRestServer extends BaseRestServer {
 	 * @param createLogs
 	 * @return
 	 */
-	private int saveToBI(List<SWIFTNetRoutingRuleObj> validatedSRRs, SRRCreateLogs createLogs) {
+	private int saveToBI(List<SWIFTNetRoutingRuleObj> validatedSRRs, SRRLogs createLogs) {
 
 		int failCount = 0;
 
