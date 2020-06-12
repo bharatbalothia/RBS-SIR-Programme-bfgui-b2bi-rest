@@ -30,6 +30,7 @@ import com.stercomm.customers.rbs.sir.rest.domain.Errors;
 import com.stercomm.customers.rbs.sir.rest.domain.RoutingRule;
 import com.stercomm.customers.rbs.sir.rest.domain.SWIFTRoutingRule;
 import com.stercomm.customers.rbs.sir.rest.exception.CreateDirectoryException;
+import com.stercomm.customers.rbs.sir.rest.util.RuleSearchBy;
 import com.stercomm.customers.rbs.sir.rest.util.SRRLogs;
 import com.stercomm.customers.rbs.sir.rest.util.SRRUpdateLog;
 import com.stercomm.customers.rbs.sir.rest.util.SRRValidator;
@@ -172,42 +173,63 @@ public class RoutingRulesRestServer extends BaseRestServer {
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces({ "application/json" })
 	public Response updateSWIFTRulesFromRule(RoutingRule rule) {
+
+		
 		SRRLogs updateLogs = new SRRLogs();
 
-		// Get the current list of Routing Rules using the entity name
-		// we get routing rule name and Object ID
 
-		Map<String, String> currentRuleset = createMapOfIDs(rule);
-
-		// now create the new list (which also creates the rules)
-
+		// now create the new list (which also creates the rules as candidates)
 		List<SWIFTNetRoutingRuleObj> newRules = populateRules(rule);
+
+		// Get the current list of Routing Rules using the properties of the put
+		// we get routing rule name and Object ID into the map
+
+		Map<String, String> currentRuleset = createMapOfIDs(newRules, RuleSearchBy.PROPERTIES);
 
 		// add the old names to a set
 		Set<String> currentRRNames = new HashSet<String>();
 		currentRuleset.keySet().forEach(s -> currentRRNames.add(s));
 
 		// add the new rules to a hashMap
-		Map<String, SWIFTNetRoutingRuleObj> newRRules = new HashMap<String,SWIFTNetRoutingRuleObj>();
+		Map<String, SWIFTNetRoutingRuleObj> newRRules = new HashMap<String, SWIFTNetRoutingRuleObj>();
 		newRules.forEach(o -> newRRules.put(o.getRouteName(), o));
 
 		// create a set of all the ones we want to add
 		Set<String> add = new HashSet<String>(newRRules.keySet());
-		// and the ones we might remove
+		// and the ones we *might* remove.. we need
+		
+		
 		Set<String> remove = new HashSet<String>(currentRRNames);
+		LOGGER.info("Rules to remove 0 (might be all existing) : " + remove);
 
-		// we dont want to add any 2wice, so remove from add list any current that also
-		// exist
+		// anything in both add and current is an update
+		// create a set of all on both add and remove
+		Set<String> update = new HashSet<String>(add);
+		remove.forEach(s -> update.add(s));
+
+		// example
+		// exist rules a,b,c
+		// newrules : b,d
+		// update should = b, remove=a,c, add = d
+
+		// we dont want to add instead of update, so remove from add list any current
+		// that also
+		// exist, or that are in the update list
+
 		add.removeAll(currentRRNames);
+		update.removeAll(add);
 
-		// we dont want to remove any that would try to be created in the new rules so
+		// we dont want to remove any that would try to be created or updated in the new rules so
 		// remove those
+		LOGGER.info("Rules to remove 1 : " + remove);
 		remove.removeAll(newRRules.keySet());
+		update.removeAll(remove);
 
 		LOGGER.info("current rules : " + currentRRNames);
 		LOGGER.info("new rules : " + newRRules.keySet());
-		LOGGER.info("Elements to add : " + add);
-		LOGGER.info("Elements to remove : " + remove);
+		LOGGER.info("Rules to add : " + add);
+		LOGGER.info("Rules to remove 2: " + remove);
+		LOGGER.info("Rules to update : " + update);
 
 		// now iterate the remove set and delete
 
@@ -216,11 +238,13 @@ public class RoutingRulesRestServer extends BaseRestServer {
 			updateLog.setRoutingRuleName(s);
 			updateLog.setUpdateAction("delete");
 			try {
-				deleteFromBI(currentRuleset.get(s));
-				updateLog.setCode(201);
-				updateLog.setFailCause("");
-				LOGGER.info("Removed : " + s);
-
+				if (deleteFromBI(currentRuleset.get(s))) {
+					updateLog.setCode(201);
+					updateLog.setFailCause("");
+					LOGGER.info("Removed : " + s);
+				} else {
+					LOGGER.severe("No Delete for : " + s);
+				}
 			} catch (Exception e) {
 				updateLog.setCode(404);
 				updateLog.setFailCause(e.getMessage());
@@ -229,16 +253,55 @@ public class RoutingRulesRestServer extends BaseRestServer {
 			}
 		});
 
-		// now iterate the add map, get search one by key and add where the 
+		// now iterate the add map, get search one by key and add where
 
 		add.forEach(s -> {
 			final SRRUpdateLog updateLog = new SRRUpdateLog();
+			SRRValidator validator = new SRRValidator();
 			updateLog.setRoutingRuleName(s);
 			updateLog.setUpdateAction("create");
+			SWIFTNetRoutingRuleObj thisSRRO = newRRules.get(s);
+			// wrap in a list to pass to the validator
+			List<SWIFTNetRoutingRuleObj> srroList = new ArrayList<SWIFTNetRoutingRuleObj>();
+			srroList.add(thisSRRO);
 			try {
-				addRuleToBI(newRRules.get(s), updateLog);
-				updateLog.setCode(201);
-				LOGGER.info("Added : " + s);
+				List<SWIFTNetRoutingRuleObj> validated = validator.validatedList(srroList, updateLogs);
+				// if is
+				if (validated.size()==0) {
+					LOGGER.severe("Validation failure : " + s);
+					
+				}else if (addRuleToBI(thisSRRO, updateLog)) {
+					updateLog.setCode(201);
+					updateLogs.appendLog(updateLog);
+					LOGGER.info("Added : " + s);
+				} else {
+	
+					LOGGER.severe("No Add for : " + s);
+				}
+
+			} catch (Exception e) {
+				updateLog.setCode(404);
+				updateLog.setFailCause(e.getMessage());
+				updateLogs.appendLog(updateLog);
+			} 
+		});
+
+		// when we update we get the srro from the new rules, and set its obj id
+		// so that we are updating the existing rule with the new rules props
+		update.forEach(s -> {
+			final SRRUpdateLog updateLog = new SRRUpdateLog();
+			updateLog.setRoutingRuleName(s);
+			updateLog.setUpdateAction("update");
+			try {
+				SWIFTNetRoutingRuleObj srro = newRRules.get(s);
+				srro.setobjectID(currentRuleset.get(s));
+				if (updateRuleInBI(srro, updateLog)) {
+					updateLog.setCode(201);
+					LOGGER.info("Updated : " + s);
+				} else {
+
+					LOGGER.severe("No update to : " + s);
+				}
 
 			} catch (Exception e) {
 				updateLog.setCode(404);
@@ -334,7 +397,7 @@ public class RoutingRulesRestServer extends BaseRestServer {
 
 		for (int i = 0; i < numOfSRRs; i++) {
 
-			LOGGER.info("Creating SSR for " + rule.getEntityName() + ", request type : " + rule.getRequestType()[i]);
+			LOGGER.info("Creating SRR for " + rule.getEntityName() + ", request type : " + rule.getRequestType()[i]);
 			SWIFTNetRoutingRuleObj swiftRule = new SWIFTRoutingRule.Builder().withActionType("BP")
 					.withService(rule.getService()).withInvokeMode("SYNC").withRequestType(rule.getRequestType()[i])
 					.withWorkflowName(rule.getRequestType()[i]).withRequestorDN(rule.getRequestorDN())
@@ -361,32 +424,61 @@ public class RoutingRulesRestServer extends BaseRestServer {
 		int failCount = 0;
 
 		for (SWIFTNetRoutingRuleObj swiftNetRoutingRuleObj : validatedSRRs) {
-			
+
 			SRRUpdateLog log = new SRRUpdateLog();
 			log.setUpdateAction("create");
 			String rn = swiftNetRoutingRuleObj.getRouteName();
 			log.setRoutingRuleName(rn);
 			LOGGER.info("Trying to save SRR : " + rn);
-			if (!addRuleToBI(swiftNetRoutingRuleObj, log)){
-				
+			if (!addRuleToBI(swiftNetRoutingRuleObj, log)) {
+
 				failCount++;
-			};
+			}
+			;
 			actionLogs.appendLog(log);
 		}
 
 		return failCount;
 	}
 
+	private boolean updateRuleInBI(SWIFTNetRoutingRuleObj srro, SRRUpdateLog log) {
+
+		boolean res = false;
+
+		LOGGER.info("Updating SRR with object ID : " + srro.getobjectID());
+		try {
+
+			res = srro.saveSWIFTNetRoutingRule(SWIFTNetRoutingRuleObj.UPDATE_ACTION);
+			// we'd expect b to be true here, so let's set it in the log
+			if (res) {
+				log.setCode(201);
+				log.setFailCause(""); // to do..can we suppress this attribute in the JSON where b==true?
+				LOGGER.info("Updated SRR with object ID : " + srro.getobjectID());
+			}
+		} catch (Exception e) {
+
+			// something unfortunate happened here
+			LOGGER.severe("Exception trying to save rule : " + srro.getRouteName());
+			LOGGER.severe(e.getMessage());
+			log.setFailCause(e.getMessage());
+			log.setCode(400);
+
+		}
+
+		return res;
+
+	}
+
 	private boolean addRuleToBI(SWIFTNetRoutingRuleObj srr, SRRUpdateLog log) {
-	    
-		boolean res =false;
+
+		boolean res = false;
 		try {
 			res = srr.saveSWIFTNetRoutingRule(SWIFTNetRoutingRuleObj.INSERT_ACTION);
 			// we'd expect b to be true here, so let's set it in the log
 			if (res) {
 				log.setCode(201);
 				log.setFailCause(""); // to do..can we suppress this attribute in the JSON where b==true?
-				LOGGER.info("Created SRR with object ID : " + srr.getRouteName());
+				LOGGER.info("Created SRR with rule name : " + srr.getRouteName());
 			}
 		} catch (Exception e) {
 
@@ -406,50 +498,45 @@ public class RoutingRulesRestServer extends BaseRestServer {
 	 * @param ruleObjID
 	 * @throws Exception
 	 */
-	private void deleteFromBI(String ruleObjID) throws Exception {
+	private boolean deleteFromBI(String ruleObjID) throws Exception {
 
+		boolean res = false;
 		SWIFTNetRoutingRuleObj ruleToDel = new SWIFTNetRoutingRuleObj();
 		ruleToDel.setobjectID(ruleObjID);
-		ruleToDel.saveSWIFTNetRoutingRule(SWIFTNetRoutingRuleObj.DELETE_ACTION);
-
+		res = ruleToDel.saveSWIFTNetRoutingRule(SWIFTNetRoutingRuleObj.DELETE_ACTION);
+		return res;
 	}
 
 	/**
 	 * create a HashMap with existing rules : name and ID
 	 * 
 	 */
-	private HashMap<String, String> createMapOfIDs(RoutingRule rule) {
+	private HashMap<String, String> createMapOfIDs(List<SWIFTNetRoutingRuleObj> newRules, RuleSearchBy by) {
 
 		HashMap<String, String> retval = new HashMap<String, String>();
-
-		// Get the current list of Routing Rules using the entity name
-		String ruleQuery = "%_" + rule.getEntityName() + "_%";
-		SWIFTNetRoutingRuleObj srroList = new SWIFTNetRoutingRuleObj();
-		ArrayList rulesList = null;
-		try {
-			rulesList = srroList.listByName(ruleQuery, 0, 200, true);
-			LOGGER.info("Found " + rulesList.size() + " existing matching rules.");
-
-			int noOfRules = rulesList.size();
-
-			if (noOfRules > 0) {
-
-				LOGGER.info("Found " + rulesList.size() + " matching rules.");
-				Iterator<HashMap> itrExisting = rulesList.iterator();
-
-				// the old collections classes are so ugly to use
-
-				while (itrExisting.hasNext()) {
-					HashMap o = (HashMap) itrExisting.next();
-					retval.put((String) o.get("route_name"), (String) o.get("objectID"));
-				}
-
+		
+		for (SWIFTNetRoutingRuleObj srro : newRules) {
+		
+			String ruleID = null;
+			String srroRouteName=srro.getRouteName();
+			
+			if (by==RuleSearchBy.PROPERTIES) {
+			
+				ruleID=srro.exists(srro.getRequestor(),srro.getResponder(),srro.getService(),srro.getRequestType());
+			}else if (by==RuleSearchBy.NAME) {
+				
+				ruleID=srro.checkExistsByName(srroRouteName);
 			}
-		} catch (Exception e) {
-
-			LOGGER.severe(e.getMessage());
+			if (null!=ruleID) {		
+				retval.put(srro.getRouteName(), ruleID);
+			
+				LOGGER.info("Mapped existing rule for " + srroRouteName + " to " + ruleID);
+			}
+			else {
+				LOGGER.info("No existing rule match for new : " + srro.getRouteName());
+				
+			}
 		}
-
 		return retval;
 	}
 

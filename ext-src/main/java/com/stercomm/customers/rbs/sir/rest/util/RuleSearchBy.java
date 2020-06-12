@@ -1,7 +1,7 @@
 package com.stercomm.customers.rbs.sir.rest.util;
 
-public enum RuleMap {
+public enum RuleSearchBy {
 
-	NEWRULES,
-	EXISTINGRULES
+	NAME,
+	PROPERTIES
 }
