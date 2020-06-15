@@ -1,5 +1,6 @@
 package com.stercomm.customers.rbs.sir.rest.server;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -36,6 +37,7 @@ import com.stercomm.customers.rbs.sir.rest.util.SRRUpdateLog;
 import com.stercomm.customers.rbs.sir.rest.util.SRRValidator;
 import com.stercomm.customers.rbs.sir.rest.util.Utils;
 import com.sterlingcommerce.woodstock.ui.SWIFTNetRoutingRuleObj;
+import com.sterlingcommerce.woodstock.util.frame.Manager;
 
 @Path("/rules")
 public class RoutingRulesRestServer extends BaseRestServer {
@@ -47,7 +49,11 @@ public class RoutingRulesRestServer extends BaseRestServer {
 
 		try {
 			boolean logToConsole = true;
-			LOGGER = setupLogging(logToConsole, System.getProperty("user.home") + "/bfgui-rest-routingrule.log");
+			String logPath=Manager.getProperties("bfgui").getProperty("log.path.dir");
+			String logName=Manager.getProperties("bfgui").getProperty("log.path.filename");
+			String fullPath = logPath + File.separator + logName;
+			LOGGER = setupLogging(logToConsole, fullPath);
+			
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
