@@ -89,7 +89,6 @@ public class BundlesRestServer {
 				+ "(select delivery_key from FB_SFGLEGACY_LINK where bundle_id = ?))";
 		ResultSet rs = null;
 	
-		
 		b.setArrivedFileKey(new String[b.getBundleID().length]);
 
 		try {
