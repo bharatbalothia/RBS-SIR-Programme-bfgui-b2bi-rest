@@ -20,18 +20,21 @@ import javax.annotation.PostConstruct;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
+import javax.ws.rs.core.UriInfo;
 
 import com.stercomm.customers.rbs.sir.rest.domain.FileSearchResult;
-import com.stercomm.customers.rbs.sir.rest.domain.FileSearchResultBuilder;
+import com.stercomm.customers.rbs.sir.rest.util.FileSearchResultBuilder;
+import com.stercomm.customers.rbs.sir.rest.util.FileSearchWhereClauseBuilder;
 import com.sterlingcommerce.woodstock.util.frame.Manager;
 import com.sterlingcommerce.woodstock.util.frame.jdbc.Conn;
 
 @Path("/files")
-public class FilesRestServer {
+public class FilesRestServer extends BaseRestServer{
 
 	private static Logger LOGGER = Logger.getLogger(FilesRestServer.class.getName());
 	private static final String FORMAT_STRING = "%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS %4$s %2$s %5$s%6$s%n";
@@ -55,27 +58,30 @@ public class FilesRestServer {
 
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
-	public Response doSearchForFiles(@QueryParam("filename") String fName) {
+	public Response doSearchForFiles(@Context UriInfo uriInfo) {
 
+		String fName=uriInfo.getQueryParameters().getFirst("filename");
+		
+		 
 		Connection conn = null;
 		PreparedStatement ps = null;
 		ResultSet rs = null;
-		int startRow=1; //unless overrided by param
-		int rowsToReturn=10;//unless overridden
+
+		final int rowsToReturn=10;
 
 		List<FileSearchResult> results = new ArrayList<FileSearchResult>();
-
+		
 		String query = "SELECT bundle_id, filename, reference, btimestamp, btype, entity_id, status, error, wf_id, message_id, "
-				+ "isoutbound, isoverride, service, doc_id FROM SCT_BUNDLE WHERE UPPER(filename) LIKE ? ORDER BY btimestamp DESC FETCH FIRST " + rowsToReturn + " ONLY";
+				+ "isoutbound, isoverride, service, doc_id FROM SCT_BUNDLE "+
+				new FileSearchWhereClauseBuilder().withFilename(fName).build();
+		
+		LOGGER.info("Query : " + query);
 		try {
 			conn = Conn.getConnection();
-			// create the prepared statement and add the criteria
 			ps = conn.prepareStatement(query);
-			ps.setString(1, "%" + fName + "%");
 			rs = ps.executeQuery();
-
+		
 			while (rs.next()) {
-
 				FileSearchResult result = toResult(rs);
 				results.add(result);
 			}
@@ -111,6 +117,8 @@ public class FilesRestServer {
 	 */
 	private FileSearchResult toResult(ResultSet row) throws SQLException{
 		
+		LOGGER.info("Row : " + row);
+		
 		int bundleID = row.getInt(1);
 		String fname=row.getString(2);
 		String ref=row.getString(3);
@@ -120,7 +128,7 @@ public class FilesRestServer {
 		int status = row.getInt(7);
 		String errorCode=row.getString(8);
 		int wfID = row.getInt(9);
-		int messageID =row.getInt(10);
+		long messageID =row.getLong(10);
 		int isOutbound=row.getInt(11);
 		int isOverride=row.getInt(12);
 		String service=row.getString(13);
@@ -130,37 +138,15 @@ public class FilesRestServer {
 		boolean bOverride=(isOverride==0)?false:true;
 		
 		String formattedTimeStamp = df.format(new java.util.Date(ts));
-
-
-		return new FileSearchResultBuilder(bundleID).withErrorCode(errorCode).withLastUpdated(formattedTimeStamp).withReference(ref)
+		
+		FileSearchResult result = new FileSearchResultBuilder(bundleID).withErrorCode(errorCode).withLastUpdated(formattedTimeStamp).withReference(ref)
 				.withType(type).withEntityID(eID).withService(service)
 				.withFilename(fname).withWorkflowID(wfID).withStatus(status)
 				.withMessageID(messageID).withOutbound(bOutbound).withOverride(bOverride).withDocID(docID)
 				.build();
+		
+		return result;
 
-	}
-
-	private Logger setupLogging(boolean logToConsole, String logFile) throws Exception {
-		// Setup the logging
-		System.setProperty("java.util.logging.SimpleFormatter.format", FORMAT_STRING);
-		LogManager.getLogManager().reset();
-		Logger thisLogger = Logger.getLogger(this.getClass().getName());
-		if (logFile != null) {
-			FileHandler logHandler = new FileHandler(logFile, 8 * 1024 * 1024, 2, true);
-			logHandler.setFormatter(new SimpleFormatter());
-			logHandler.setLevel(Level.FINEST);
-			thisLogger.addHandler(logHandler);
-		}
-
-		if (logToConsole) {
-			ConsoleHandler consoleHandler = new ConsoleHandler();
-			consoleHandler.setFormatter(new SimpleFormatter());
-			consoleHandler.setLevel(Level.INFO);
-			thisLogger.addHandler(consoleHandler);
-		}
-
-		thisLogger.setLevel(Level.INFO);
-		return thisLogger;
 	}
 
 }

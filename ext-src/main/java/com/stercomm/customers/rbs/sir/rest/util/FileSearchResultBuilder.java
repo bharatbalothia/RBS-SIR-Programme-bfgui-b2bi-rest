@@ -1,8 +1,8 @@
-package com.stercomm.customers.rbs.sir.rest.domain;
+package com.stercomm.customers.rbs.sir.rest.util;
 
 import javax.xml.bind.annotation.XmlRootElement;
 
-import com.sterlingcommerce.woodstock.ui.SWIFTNetRoutingRuleObj;
+import com.stercomm.customers.rbs.sir.rest.domain.FileSearchResult;
 
 /**
  * 
@@ -25,7 +25,7 @@ public class FileSearchResultBuilder {
 	private String lastUpdated;
 	private int workflowID;
 	private int entityID;
-	private int messageID;
+	private long messageID;
 	private boolean isOutbound;
 	private boolean isOverride;
 	private String docID;
@@ -59,7 +59,7 @@ public class FileSearchResultBuilder {
 		return this;
 	}
 
-	public FileSearchResultBuilder withMessageID(int messageID) {
+	public FileSearchResultBuilder withMessageID(long messageID) {
 
 		this.messageID = messageID;
 

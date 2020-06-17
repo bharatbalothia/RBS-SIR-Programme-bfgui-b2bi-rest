@@ -14,7 +14,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 public class FileSearchResult {
 
 	public FileSearchResult(int id, String errorCode, int status, String filename, String reference, String lastUpdated,
-			String service, int workflowID, String type, int entityID, int messageID, boolean isOverride, boolean isOutbound, String docID) {
+			String service, int workflowID, String type, int entityID, long messageID, boolean isOverride, boolean isOutbound, String docID) {
 
 		this.id = id;
 		this.errorCode = errorCode;
@@ -51,7 +51,7 @@ public class FileSearchResult {
 	private String lastUpdated;
 	private int workflowID;
 	private int entityID;
-	private int messageID;
+	private long messageID;
 	private boolean isOutbound;
 	private boolean isOverride;
 	private String docID;
@@ -80,11 +80,11 @@ public class FileSearchResult {
 		this.docID = docID;
 	}
 
-	public int getMessageID() {
+	public long getMessageID() {
 		return messageID;
 	}
 
-	public void setMessageID(int messageID) {
+	public void setMessageID(long messageID) {
 		this.messageID = messageID;
 	}
 
