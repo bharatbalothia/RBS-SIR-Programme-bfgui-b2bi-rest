@@ -22,7 +22,7 @@ public class FileSearchResultBuilder {
 	private String reference;
 	private String type;
 	private String service;
-	private String lastUpdated;
+	private String timestamp;
 	private int workflowID;
 	private int entityID;
 	private long messageID;
@@ -37,7 +37,14 @@ public class FileSearchResultBuilder {
 
 	public FileSearchResult build() {
 
-		return new FileSearchResult(id, errorCode,status,filename,reference,lastUpdated, service, workflowID,type, entityID, messageID, isOverride, isOutbound, docID);
+		return new FileSearchResult(id, errorCode,status,filename,reference,timestamp, service, workflowID,type, entityID, messageID, isOverride, isOutbound, docID);
+	}
+	
+	public FileSearchResultBuilder withTimestamp(String timestamp) {
+
+		this.timestamp = timestamp;
+
+		return this;
 	}
 
 	public FileSearchResultBuilder withWorkflowID(int workflowID) {
@@ -66,12 +73,7 @@ public class FileSearchResultBuilder {
 		return this;
 	}
 
-	public FileSearchResultBuilder withLastUpdated(String lu) {
-
-		this.lastUpdated = lu;
-
-		return this;
-	}
+	
 
 	public FileSearchResultBuilder withType(String type) {
 

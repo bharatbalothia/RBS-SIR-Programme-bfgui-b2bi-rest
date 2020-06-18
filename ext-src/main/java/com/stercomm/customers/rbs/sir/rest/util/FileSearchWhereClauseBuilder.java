@@ -1,10 +1,6 @@
 package com.stercomm.customers.rbs.sir.rest.util;
 
-import java.util.Arrays;
-
 import javax.xml.bind.annotation.XmlRootElement;
-
-import com.stercomm.customers.rbs.sir.rest.domain.FileSearchWhereClause;
 
 /**
  * 
@@ -31,7 +27,7 @@ public class FileSearchWhereClauseBuilder {
 
 	public FileSearchWhereClauseBuilder withWorkflowID(int workflowID) {
 
-		buf.append("workflowid=" + workflowID);
+		buf.append("wf_id=" + workflowID);
 		return this;
 	}
 	public FileSearchWhereClauseBuilder withOverride(boolean isOverride) {
@@ -51,22 +47,16 @@ public class FileSearchWhereClauseBuilder {
 		return this;
 	}
 
-	public FileSearchWhereClauseBuilder withLastUpdated(String lu) {
-
-		buf.append("timestamp=" + lu);
-		return this;
-	}
-	
 	public FileSearchWhereClauseBuilder before(String before) {
 		
 		
-		buf.append("btimestamp<to_timestamp('" + before + "','yyyy-MM-ddTHH:mmXXX')");
+		buf.append("btimestamp<to_timestamp('" + before + "','yyyy-MM-dd\"T\"HH:mi:ss')");
 		return this;
 	}
 	
-	public FileSearchWhereClauseBuilder after(String after) {
-		
-		buf.append("btimestamp>to_timestamp('" + after + "','yyyy-MM-ddTHH:mmXXX')");
+	public FileSearchWhereClauseBuilder after(String after) { 
+
+		buf.append("btimestamp>to_timestamp('" + after + "','yyyy-MM-dd\"T\"HH:mi:ss')");
 		return this;
 	}
 
@@ -122,7 +112,7 @@ public class FileSearchWhereClauseBuilder {
 		buf.append("bundle_id=" + id);
 		return this;
 	}
-	public FileSearchWhereClauseBuilder withEntityID(int entityID) {
+	public FileSearchWhereClauseBuilder withEntityID(long entityID) {
 
 		buf.append("entity_id=" + entityID);
 		return this;

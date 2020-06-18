@@ -50,7 +50,7 @@ public class RoutingRulesRestServer extends BaseRestServer {
 		try {
 			boolean logToConsole = true;
 			String logPath=Manager.getProperties("bfgui").getProperty("log.path.dir");
-			String logName=Manager.getProperties("bfgui").getProperty("log.path.filename");
+			String logName=Manager.getProperties("bfgui").getProperty("log.path.routingrules.filename");
 			String fullPath = logPath + File.separator + logName;
 			LOGGER = setupLogging(logToConsole, fullPath);
 			

@@ -13,7 +13,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement
 public class FileSearchResult {
 
-	public FileSearchResult(int id, String errorCode, int status, String filename, String reference, String lastUpdated,
+	public FileSearchResult(int id, String errorCode, int status, String filename, String reference, String timestamp,
 			String service, int workflowID, String type, int entityID, long messageID, boolean isOverride, boolean isOutbound, String docID) {
 
 		this.id = id;
@@ -21,7 +21,7 @@ public class FileSearchResult {
 		this.status = status;
 		this.filename = filename;
 		this.reference = reference;
-		this.lastUpdated = lastUpdated;
+		this.timestamp = timestamp;
 		this.service = service;
 		this.workflowID = workflowID;
 		this.type = type;
@@ -36,8 +36,8 @@ public class FileSearchResult {
 	@Override
 	public String toString() {
 		return "FileSearchResult [id=" + id + ", status=" + status + ", filename=" + filename + ", errorCode="
-				+ errorCode + ", reference=" + reference + ", type=" + type + ", service=" + service + ", last update="
-				+ lastUpdated + ", workflowID=" + workflowID + ", entity id = " + entityID + ", messageID=" + messageID
+				+ errorCode + ", reference=" + reference + ", type=" + type + ", service=" + service + ", timestamp="
+				+ timestamp + ", workflowID=" + workflowID + ", entity id = " + entityID + ", messageID=" + messageID
 				+ ", isOverride=" + isOverride + ", isOutbound=" + isOutbound + ", doc id=" +docID+"]";
 	}
 
@@ -48,7 +48,7 @@ public class FileSearchResult {
 	private String reference;
 	private String type;
 	private String service;
-	private String lastUpdated;
+	private String timestamp;
 	private int workflowID;
 	private int entityID;
 	private long messageID;
@@ -124,8 +124,8 @@ public class FileSearchResult {
 		return service;
 	}
 
-	public String getLastUpdated() {
-		return lastUpdated;
+	public String getTimestamp() {
+		return timestamp;
 	}
 
 	public int getWorkflowID() {
@@ -160,8 +160,8 @@ public class FileSearchResult {
 		this.service = service;
 	}
 
-	public void setTimestamp(String lu) {
-		this.lastUpdated = lu;
+	public void setTimestamp(String ts) {
+		this.timestamp = ts;
 	}
 
 	public void setWorkflowID(int workflowID) {

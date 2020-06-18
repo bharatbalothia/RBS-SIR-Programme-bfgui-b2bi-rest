@@ -9,12 +9,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.ConsoleHandler;
-import java.util.logging.FileHandler;
-import java.util.logging.Level;
-import java.util.logging.LogManager;
 import java.util.logging.Logger;
-import java.util.logging.SimpleFormatter;
 
 import javax.annotation.PostConstruct;
 import javax.ws.rs.GET;
@@ -34,11 +29,11 @@ import com.sterlingcommerce.woodstock.util.frame.Manager;
 import com.sterlingcommerce.woodstock.util.frame.jdbc.Conn;
 
 @Path("/files")
-public class FilesRestServer extends BaseRestServer{
+public class FilesRestServer extends BaseRestServer {
 
 	private static Logger LOGGER = Logger.getLogger(FilesRestServer.class.getName());
 	private static final String FORMAT_STRING = "%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS %4$s %2$s %5$s%6$s%n";
-	
+
 	private final DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mmXXX");
 
 	@PostConstruct
@@ -46,7 +41,7 @@ public class FilesRestServer extends BaseRestServer{
 		try {
 			boolean logToConsole = true;
 			String logPath = Manager.getProperties("bfgui").getProperty("log.path.dir");
-			String logName = Manager.getProperties("bfgui").getProperty("log.path.filename");
+			String logName = Manager.getProperties("bfgui").getProperty("log.path.filesearch.filename");
 			String fullPath = logPath + File.separator + logName;
 			LOGGER = setupLogging(logToConsole, fullPath);
 
@@ -60,27 +55,35 @@ public class FilesRestServer extends BaseRestServer{
 	@Produces(MediaType.APPLICATION_JSON)
 	public Response doSearchForFiles(@Context UriInfo uriInfo) {
 
-		String fName=uriInfo.getQueryParameters().getFirst("filename");
-		
-		 
 		Connection conn = null;
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 
-		final int rowsToReturn=10;
+		// default
+		final int rowsToReturn = 10;
+		
+		//unless a param is specified we start from the top
+		int offset=1;
 
 		List<FileSearchResult> results = new ArrayList<FileSearchResult>();
 		
-		String query = "SELECT bundle_id, filename, reference, btimestamp, btype, entity_id, status, error, wf_id, message_id, "
-				+ "isoutbound, isoverride, service, doc_id FROM SCT_BUNDLE "+
-				new FileSearchWhereClauseBuilder().withFilename(fName).build();
+		StringBuffer query = new StringBuffer();
+		query.append("SELECT bundle_id, filename, reference, btimestamp, btype, entity_id, status, error, wf_id, message_id, "
+				+ "isoutbound, isoverride, service, doc_id FROM SCT_BUNDLE ");
+
+		String where = getWhereFromParams(uriInfo.getQueryParameters());
+		query.append(where);
 		
-		LOGGER.info("Query : " + query);
+	//	String query = "SELECT bundle_id, filename, reference, btimestamp, btype, entity_id, status, error, wf_id, message_id, "
+	//			+ "isoutbound, isoverride, service, doc_id FROM SCT_BUNDLE " + where;
+
+		String fullQuery = query.toString();
+		LOGGER.info("Query : " + fullQuery);
 		try {
 			conn = Conn.getConnection();
-			ps = conn.prepareStatement(query);
+			ps = conn.prepareStatement(fullQuery);
 			rs = ps.executeQuery();
-		
+
 			while (rs.next()) {
 				FileSearchResult result = toResult(rs);
 				results.add(result);
@@ -111,42 +114,191 @@ public class FilesRestServer extends BaseRestServer{
 
 	/**
 	 * Create a FileSearchResult object from a Row
+	 * 
 	 * @param row
 	 * @return
 	 * @throws SQLException
 	 */
-	private FileSearchResult toResult(ResultSet row) throws SQLException{
-		
-		LOGGER.info("Row : " + row);
-		
+	private FileSearchResult toResult(ResultSet row) throws SQLException {
+
+
 		int bundleID = row.getInt(1);
-		String fname=row.getString(2);
-		String ref=row.getString(3);
-		long ts =row.getTimestamp(4).getTime();
-		String type=row.getString(5);
+		String fname = row.getString(2);
+		String ref = row.getString(3);
+		long ts = row.getTimestamp(4).getTime();
+		String type = row.getString(5);
 		int eID = row.getInt(6);
 		int status = row.getInt(7);
-		String errorCode=row.getString(8);
+		String errorCode = row.getString(8);
 		int wfID = row.getInt(9);
-		long messageID =row.getLong(10);
-		int isOutbound=row.getInt(11);
-		int isOverride=row.getInt(12);
-		String service=row.getString(13);
-		String docID=row.getString(14);
-		
-		boolean bOutbound=(isOutbound==0)?false:true;
-		boolean bOverride=(isOverride==0)?false:true;
-		
+		long messageID = row.getLong(10);
+		int isOutbound = row.getInt(11);
+		int isOverride = row.getInt(12);
+		String service = row.getString(13);
+		String docID = row.getString(14);
+
+		boolean bOutbound = (isOutbound == 0) ? false : true;
+		boolean bOverride = (isOverride == 0) ? false : true;
+
 		String formattedTimeStamp = df.format(new java.util.Date(ts));
-		
-		FileSearchResult result = new FileSearchResultBuilder(bundleID).withErrorCode(errorCode).withLastUpdated(formattedTimeStamp).withReference(ref)
-				.withType(type).withEntityID(eID).withService(service)
-				.withFilename(fname).withWorkflowID(wfID).withStatus(status)
-				.withMessageID(messageID).withOutbound(bOutbound).withOverride(bOverride).withDocID(docID)
-				.build();
-		
+
+		FileSearchResult result = new FileSearchResultBuilder(bundleID).withErrorCode(errorCode)
+				.withTimestamp(formattedTimeStamp).withReference(ref).withType(type).withEntityID(eID)
+				.withService(service).withFilename(fname).withWorkflowID(wfID).withStatus(status)
+				.withMessageID(messageID).withOutbound(bOutbound).withOverride(bOverride).withDocID(docID).build();
+
 		return result;
 
 	}
 
+	private String getWhereFromParams(MultivaluedMap<String, String> qsparams) {
+
+		FileSearchWhereClauseBuilder builder = new FileSearchWhereClauseBuilder();
+
+		// how many?
+		int numOfParams = qsparams.keySet().size();
+		int numElementsSoFar = 0;
+
+		String s = qsparams.getFirst("filename");
+
+		if (s != null) {
+			builder.withFilename(s);
+			numElementsSoFar++;
+			if (numElementsSoFar < numOfParams) {
+				builder.and();
+			}
+		}
+
+		s = qsparams.getFirst("errorcode");
+
+		if (s != null) {
+			builder.withErrorCode(s);
+			numElementsSoFar++;
+			if (numElementsSoFar < numOfParams) {
+				builder.and();
+			}
+		}
+
+		s = qsparams.getFirst("service");
+
+		if (s != null) {
+			builder.withService(s);
+			numElementsSoFar++;
+			if (numElementsSoFar < numOfParams) {
+				builder.and();
+			}
+		}
+
+		s = qsparams.getFirst("reference");
+
+		if (s != null) {
+			builder.withReference(s);
+			numElementsSoFar++;
+			if (numElementsSoFar < numOfParams) {
+				builder.and();
+			}
+		}
+
+		s = qsparams.getFirst("docid");
+
+		if (s != null) {
+			builder.withDocID(s);
+			numElementsSoFar++;
+			if (numElementsSoFar < numOfParams) {
+				builder.and();
+			}
+		}
+
+		s = qsparams.getFirst("type");
+
+		if (s != null) {
+			builder.withType(s);
+			numElementsSoFar++;
+			if (numElementsSoFar < numOfParams) {
+				builder.and();
+			}
+		}
+
+		s = qsparams.getFirst("outbound");
+
+		if (s != null) {
+			builder.withOutbound(Boolean.valueOf(s));
+			numElementsSoFar++;
+			if (numElementsSoFar < numOfParams) {
+				builder.and();
+			}
+		}
+
+		s = qsparams.getFirst("override");
+
+		if (s != null) {
+			builder.withOverride(Boolean.valueOf(s));
+			numElementsSoFar++;
+			if (numElementsSoFar < numOfParams) {
+				builder.and();
+			}
+		}
+
+		s = qsparams.getFirst("messageid");
+
+		if (s != null) {
+			builder.withMessageID(Long.valueOf(s));
+			numElementsSoFar++;
+			if (numElementsSoFar < numOfParams) {
+				builder.and();
+			}
+		}
+
+		s = qsparams.getFirst("entityid");
+
+		if (s != null) {
+			builder.withEntityID(Long.valueOf(s));
+			numElementsSoFar++;
+			if (numElementsSoFar < numOfParams) {
+				builder.and();
+			}
+		}
+
+		s = qsparams.getFirst("from");
+
+		if (s != null) {
+			builder.after(s);
+			numElementsSoFar++;
+			if (numElementsSoFar < numOfParams) {
+				builder.and();
+			}
+		}
+
+		s = qsparams.getFirst("to");
+
+		if (s != null) {
+			builder.before(s);
+			numElementsSoFar++;
+			if (numElementsSoFar < numOfParams) {
+				builder.and();
+			}
+		}
+
+		s = qsparams.getFirst("status");
+
+		if (s != null) {
+			builder.withStatus(Integer.valueOf(s));
+			numElementsSoFar++;
+			if (numElementsSoFar < numOfParams) {
+				builder.and();
+			}
+		}
+
+		s = qsparams.getFirst("wfid");
+
+		if (s != null) {
+			builder.withWorkflowID(Integer.valueOf(s));
+			numElementsSoFar++;
+			if (numElementsSoFar < numOfParams) {
+				builder.and();
+			}
+		}
+		return builder.build();
+
+	}
 }
