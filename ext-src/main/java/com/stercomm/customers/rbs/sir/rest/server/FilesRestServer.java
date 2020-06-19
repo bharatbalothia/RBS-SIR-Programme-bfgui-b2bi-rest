@@ -9,6 +9,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
@@ -32,7 +33,6 @@ import com.sterlingcommerce.woodstock.util.frame.jdbc.Conn;
 public class FilesRestServer extends BaseRestServer {
 
 	private static Logger LOGGER = Logger.getLogger(FilesRestServer.class.getName());
-	private static final String FORMAT_STRING = "%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS %4$s %2$s %5$s%6$s%n";
 
 	private final DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mmXXX");
 
@@ -59,26 +59,46 @@ public class FilesRestServer extends BaseRestServer {
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 
-		// default
-		final int rowsToReturn = 10;
-		
-		//unless a param is specified we start from the top
-		int offset=1;
+		// default rows to return on each request
 
-		List<FileSearchResult> results = new ArrayList<FileSearchResult>();
-		
+		final List<String> rowsToReturn = new ArrayList<String>();
+		rowsToReturn.add("10");
+
+		// unless a param is specified, we start from 1 each time
+		final List<String> offset = new ArrayList<String>();
+		offset.add("0");
+
+		uriInfo.getQueryParameters().putIfAbsent("start", offset);
+		uriInfo.getQueryParameters().putIfAbsent("rows", rowsToReturn);
+
+		String pagination = getPaginationString(uriInfo.getQueryParameters());
+
+		// now remove them so we don't use them in the WHERE
+
+		uriInfo.getQueryParameters().remove("start");
+		uriInfo.getQueryParameters().remove("rows");
+
+		uriInfo.getQueryParameters().keySet().forEach(s -> LOGGER.info(s));
+
 		StringBuffer query = new StringBuffer();
-		query.append("SELECT bundle_id, filename, reference, btimestamp, btype, entity_id, status, error, wf_id, message_id, "
-				+ "isoutbound, isoverride, service, doc_id FROM SCT_BUNDLE ");
+		query.append(
+				"SELECT bundle_id, filename, reference, btimestamp, btype, entity_id, status, error, wf_id, message_id, "
+						+ "isoutbound, isoverride, service, doc_id FROM SCT_BUNDLE ");
 
-		String where = getWhereFromParams(uriInfo.getQueryParameters());
-		query.append(where);
-		
-	//	String query = "SELECT bundle_id, filename, reference, btimestamp, btype, entity_id, status, error, wf_id, message_id, "
-	//			+ "isoutbound, isoverride, service, doc_id FROM SCT_BUNDLE " + where;
+		// are there any query params?
+		if (uriInfo.getQueryParameters().keySet().size() > 0) {
+			String where = getWhereFromParams(uriInfo.getQueryParameters());
+			query.append(where);
+		}
+
+		String orderBy = " ORDER BY BUNDLE_ID DESC";
+		query.append(orderBy);
+		query.append(pagination);
 
 		String fullQuery = query.toString();
 		LOGGER.info("Query : " + fullQuery);
+
+		List<FileSearchResult> results = new ArrayList<FileSearchResult>();
 		try {
 			conn = Conn.getConnection();
 			ps = conn.prepareStatement(fullQuery);
@@ -121,7 +141,6 @@ public class FilesRestServer extends BaseRestServer {
 	 */
 	private FileSearchResult toResult(ResultSet row) throws SQLException {
 
-
 		int bundleID = row.getInt(1);
 		String fname = row.getString(2);
 		String ref = row.getString(3);
@@ -155,7 +174,6 @@ public class FilesRestServer extends BaseRestServer {
 
 		FileSearchWhereClauseBuilder builder = new FileSearchWhereClauseBuilder();
 
-		// how many?
 		int numOfParams = qsparams.keySet().size();
 		int numElementsSoFar = 0;
 
@@ -300,5 +318,13 @@ public class FilesRestServer extends BaseRestServer {
 		}
 		return builder.build();
 
+	}
+	
+	private String getPaginationString(MultivaluedMap<String, String> par) {
+		
+		String off = par.getFirst("start");
+		String rows = par.getFirst("rows");
+		
+		return " OFFSET " + off + " ROWS FETCH FIRST " + rows + " ROWS ONLY";
 	}
 }

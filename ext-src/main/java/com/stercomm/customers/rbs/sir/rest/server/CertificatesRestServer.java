@@ -29,7 +29,7 @@ import com.sterlingcommerce.woodstock.util.frame.jdbc.Conn;
 public class CertificatesRestServer extends BaseRestServer {
 
 	private static Logger LOGGER = Logger.getLogger(CertificatesRestServer.class.getName());
-	private static final String FORMAT_STRING = "%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS %4$s %2$s %5$s%6$s%n";
+	
 
 	@PostConstruct
 	private void init() {
