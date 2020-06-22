@@ -34,7 +34,7 @@ public class FilesRestServer extends BaseRestServer {
 
 	private static Logger LOGGER = Logger.getLogger(FilesRestServer.class.getName());
 
-	private final DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mmXXX");
+	private final DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
 
 	@PostConstruct
 	private void init() {
@@ -59,8 +59,7 @@ public class FilesRestServer extends BaseRestServer {
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 
-		// default rows to return on each request
-
+		// default num rows to return on each request
 		final List<String> rowsToReturn = new ArrayList<String>();
 		rowsToReturn.add("10");
 
@@ -68,36 +67,40 @@ public class FilesRestServer extends BaseRestServer {
 		final List<String> offset = new ArrayList<String>();
 		offset.add("0");
 
+		// add those if they arent there ...
 		uriInfo.getQueryParameters().putIfAbsent("start", offset);
 		uriInfo.getQueryParameters().putIfAbsent("rows", rowsToReturn);
 
+		// create the pagination string...
 		String pagination = getPaginationString(uriInfo.getQueryParameters());
 
-		// now remove them so we don't use them in the WHERE
-
+		// now remove the pagination params so we don't try to use them in the WHERE
 		uriInfo.getQueryParameters().remove("start");
 		uriInfo.getQueryParameters().remove("rows");
 
-		uriInfo.getQueryParameters().keySet().forEach(s -> LOGGER.info(s));
-
+		// now contstruct the query
 		StringBuffer query = new StringBuffer();
 		query.append(
 				"SELECT bundle_id, filename, reference, btimestamp, btype, entity_id, status, error, wf_id, message_id, "
 						+ "isoutbound, isoverride, service, doc_id FROM SCT_BUNDLE ");
 
-		// are there any query params?
+		// are there any query params, if so create a WHERE?
 		if (uriInfo.getQueryParameters().keySet().size() > 0) {
 			String where = getWhereFromParams(uriInfo.getQueryParameters());
 			query.append(where);
 		}
-
+		
+		// need to order by something
 		String orderBy = " ORDER BY BUNDLE_ID DESC";
 		query.append(orderBy);
+		
+		// append the pagination we worked out earlier
 		query.append(pagination);
 
 		String fullQuery = query.toString();
 		LOGGER.info("Query : " + fullQuery);
 
+		// where we put results
 		List<FileSearchResult> results = new ArrayList<FileSearchResult>();
 		try {
 			conn = Conn.getConnection();
