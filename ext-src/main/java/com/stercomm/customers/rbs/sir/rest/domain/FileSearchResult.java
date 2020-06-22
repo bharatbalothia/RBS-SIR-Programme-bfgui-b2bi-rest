@@ -14,7 +14,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 public class FileSearchResult {
 
 	public FileSearchResult(int id, String errorCode, int status, String filename, String reference, String timestamp,
-			String service, int workflowID, String type, int entityID, long messageID, boolean isOverride, boolean isOutbound, String docID) {
+			String service, int workflowID, String type, int entityID, long messageID, boolean isOverride, boolean isOutbound, String docID, int total) {
 
 		this.id = id;
 		this.errorCode = errorCode;
@@ -30,6 +30,7 @@ public class FileSearchResult {
 		this.isOverride=isOverride;
 		this.isOutbound=isOutbound;
 		this.docID=docID;
+		this.transactionTotal=total;
 
 	}
 
@@ -38,7 +39,7 @@ public class FileSearchResult {
 		return "FileSearchResult [id=" + id + ", status=" + status + ", filename=" + filename + ", errorCode="
 				+ errorCode + ", reference=" + reference + ", type=" + type + ", service=" + service + ", timestamp="
 				+ timestamp + ", workflowID=" + workflowID + ", entity id = " + entityID + ", messageID=" + messageID
-				+ ", isOverride=" + isOverride + ", isOutbound=" + isOutbound + ", doc id=" +docID+"]";
+				+ ", isOverride=" + isOverride + ", isOutbound=" + isOutbound + ", doc id=" +docID+", transactionTotal=" + transactionTotal+"]";
 	}
 
 	private int id;
@@ -55,9 +56,18 @@ public class FileSearchResult {
 	private boolean isOutbound;
 	private boolean isOverride;
 	private String docID;
+	private int transactionTotal;
 
 	public boolean isOutbound() {
 		return isOutbound;
+	}
+
+	public int getTransactionTotal() {
+		return transactionTotal;
+	}
+
+	public void setTransactionTotal(int transactionTotal) {
+		this.transactionTotal = transactionTotal;
 	}
 
 	public void setOutbound(boolean isOutbound) {

@@ -29,6 +29,7 @@ public class FileSearchResultBuilder {
 	private boolean isOutbound;
 	private boolean isOverride;
 	private String docID;
+	private int transactionTotal;
 
 	public FileSearchResultBuilder(int id) {
 
@@ -37,9 +38,9 @@ public class FileSearchResultBuilder {
 
 	public FileSearchResult build() {
 
-		return new FileSearchResult(id, errorCode,status,filename,reference,timestamp, service, workflowID,type, entityID, messageID, isOverride, isOutbound, docID);
+		return new FileSearchResult(id, errorCode,status,filename,reference,timestamp, service, workflowID,type, entityID, messageID, isOverride, isOutbound, docID, transactionTotal);
 	}
-	
+	 
 	public FileSearchResultBuilder withTimestamp(String timestamp) {
 
 		this.timestamp = timestamp;
@@ -59,6 +60,14 @@ public class FileSearchResultBuilder {
 
 		return this;
 	}
+	
+	public FileSearchResultBuilder withTransactionTotal(int total) {
+
+		this.transactionTotal = total;
+
+		return this;
+	}
+	
 	public FileSearchResultBuilder withOutbound(boolean isOutbound) {
 
 		this.isOutbound = isOutbound;

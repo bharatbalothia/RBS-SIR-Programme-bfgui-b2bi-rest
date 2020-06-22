@@ -9,12 +9,12 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
@@ -51,6 +51,7 @@ public class FilesRestServer extends BaseRestServer {
 
 	}
 
+	
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
 	public Response doSearchForFiles(@Context UriInfo uriInfo) {
@@ -82,12 +83,16 @@ public class FilesRestServer extends BaseRestServer {
 		StringBuffer query = new StringBuffer();
 		query.append(
 				"SELECT bundle_id, filename, reference, btimestamp, btype, entity_id, status, error, wf_id, message_id, "
-						+ "isoutbound, isoverride, service, doc_id FROM SCT_BUNDLE ");
+						+ "isoutbound, isoverride, service, doc_id, (select count(*) from SCT_PAYMENT p where p.bundle_id = b.bundle_id) as trans FROM SCT_BUNDLE b ");
 
 		// are there any query params, if so create a WHERE?
 		if (uriInfo.getQueryParameters().keySet().size() > 0) {
 			String where = getWhereFromParams(uriInfo.getQueryParameters());
 			query.append(where);
+			if (!uriInfo.getQueryParameters().containsKey("outbound")) {
+				// current systems screens not 0 or 1 values, so do we.
+				query.append(" and (isoutbound=0 or isoutbound = 1) ");
+			}
 		}
 		
 		// need to order by something
@@ -158,6 +163,7 @@ public class FilesRestServer extends BaseRestServer {
 		int isOverride = row.getInt(12);
 		String service = row.getString(13);
 		String docID = row.getString(14);
+		int total=row.getInt(15);
 
 		boolean bOutbound = (isOutbound == 0) ? false : true;
 		boolean bOverride = (isOverride == 0) ? false : true;
@@ -167,7 +173,8 @@ public class FilesRestServer extends BaseRestServer {
 		FileSearchResult result = new FileSearchResultBuilder(bundleID).withErrorCode(errorCode)
 				.withTimestamp(formattedTimeStamp).withReference(ref).withType(type).withEntityID(eID)
 				.withService(service).withFilename(fname).withWorkflowID(wfID).withStatus(status)
-				.withMessageID(messageID).withOutbound(bOutbound).withOverride(bOverride).withDocID(docID).build();
+				.withMessageID(messageID).withOutbound(bOutbound).withOverride(bOverride).withDocID(docID)
+				.withTransactionTotal(total).build();
 
 		return result;
 
