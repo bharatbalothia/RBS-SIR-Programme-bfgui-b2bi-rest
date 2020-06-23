@@ -24,8 +24,10 @@ import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
 
 import com.stercomm.customers.rbs.sir.rest.domain.FileSearchResult;
+import com.stercomm.customers.rbs.sir.rest.domain.TransactionSearchResult;
 import com.stercomm.customers.rbs.sir.rest.util.FileSearchResultBuilder;
 import com.stercomm.customers.rbs.sir.rest.util.FileSearchWhereClauseBuilder;
+import com.stercomm.customers.rbs.sir.rest.util.TransactionSearchResultBuilder;
 import com.sterlingcommerce.woodstock.util.frame.Manager;
 import com.sterlingcommerce.woodstock.util.frame.jdbc.Conn;
 
@@ -51,7 +53,6 @@ public class FilesRestServer extends BaseRestServer {
 
 	}
 
-	
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
 	public Response doSearchForFiles(@Context UriInfo uriInfo) {
@@ -94,11 +95,11 @@ public class FilesRestServer extends BaseRestServer {
 				query.append(" and (isoutbound=0 or isoutbound = 1) ");
 			}
 		}
-		
+
 		// need to order by something
 		String orderBy = " ORDER BY BUNDLE_ID DESC";
 		query.append(orderBy);
-		
+
 		// append the pagination we worked out earlier
 		query.append(pagination);
 
@@ -113,7 +114,7 @@ public class FilesRestServer extends BaseRestServer {
 			rs = ps.executeQuery();
 
 			while (rs.next()) {
-				FileSearchResult result = toResult(rs);
+				FileSearchResult result = toFileSearchResult(rs);
 				results.add(result);
 			}
 		}
@@ -140,6 +141,86 @@ public class FilesRestServer extends BaseRestServer {
 		return Response.status(Status.OK).entity(results).build();
 	}
 
+	@GET
+	@Path("/{fileid}/transactions")
+	@Produces(MediaType.APPLICATION_JSON)
+	public Response doSearchForTransactions(@PathParam("fileid") String bundleid, @Context UriInfo uriInfo) {
+		Connection conn = null;
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+
+		// default num rows to return on each request
+		final List<String> rowsToReturn = new ArrayList<String>();
+		rowsToReturn.add("10");
+
+		// unless a param is specified, we start from 1 each time
+		final List<String> offset = new ArrayList<String>();
+		offset.add("0");
+
+		// add those if they arent there ...
+		uriInfo.getQueryParameters().putIfAbsent("start", offset);
+		uriInfo.getQueryParameters().putIfAbsent("rows", rowsToReturn);
+
+		// create the pagination string...
+		String pagination = getPaginationString(uriInfo.getQueryParameters());
+
+		// now remove the pagination params so we don't try to use them in the WHERE
+		uriInfo.getQueryParameters().remove("start");
+		uriInfo.getQueryParameters().remove("rows");
+
+		// now construct the query
+		StringBuffer query = new StringBuffer();
+		query.append(
+				"SELECT payment_id, transaction_id, settle_date, settle_amt, type,  "+
+						"status, wf_id from (select * from SCT_PAYMENT UNION select * from SCT_PAYMENT_ARCHIVE) "+
+						"WHERE BUNDLE_ID = ? ORDER BY PAYMENT_ID DESC ");
+
+		// append the pagination we worked out earlier
+		query.append(pagination);
+		// where we put results
+		List<TransactionSearchResult> results = new ArrayList<TransactionSearchResult>();
+		
+		String fullQuery = query.toString();
+		LOGGER.info("Query : " + fullQuery);
+
+		
+		try {
+			conn = Conn.getConnection();
+			ps = conn.prepareStatement(fullQuery);
+			ps.setString(1, bundleid);
+			rs = ps.executeQuery();
+
+			while (rs.next()) {
+				TransactionSearchResult result = toTransactionResult(rs);
+				results.add(result);
+			}
+		}
+
+		catch (Exception e) {
+			LOGGER.severe("SQL Error searching the SCT PAYMENT & ARCHIVE tables : " + e.getMessage());
+
+		} finally {
+			try {
+				if (rs != null) {
+					rs.close();
+				}
+				if (ps != null) {
+					ps.close();
+				}
+				if (conn != null) {
+					Conn.freeConnection(conn);
+				}
+			} catch (SQLException se) {
+				LOGGER.severe("SQL exception : " + se.getMessage());
+			}
+		}
+
+		
+
+		return Response.status(Status.OK).entity(results).build();
+
+	}
+
 	/**
 	 * Create a FileSearchResult object from a Row
 	 * 
@@ -147,7 +228,7 @@ public class FilesRestServer extends BaseRestServer {
 	 * @return
 	 * @throws SQLException
 	 */
-	private FileSearchResult toResult(ResultSet row) throws SQLException {
+	private FileSearchResult toFileSearchResult(ResultSet row) throws SQLException {
 
 		int bundleID = row.getInt(1);
 		String fname = row.getString(2);
@@ -163,7 +244,7 @@ public class FilesRestServer extends BaseRestServer {
 		int isOverride = row.getInt(12);
 		String service = row.getString(13);
 		String docID = row.getString(14);
-		int total=row.getInt(15);
+		int total = row.getInt(15);
 
 		boolean bOutbound = (isOutbound == 0) ? false : true;
 		boolean bOverride = (isOverride == 0) ? false : true;
@@ -176,6 +257,39 @@ public class FilesRestServer extends BaseRestServer {
 				.withMessageID(messageID).withOutbound(bOutbound).withOverride(bOverride).withDocID(docID)
 				.withTransactionTotal(total).build();
 
+		return result;
+
+	}
+	
+	/**
+	 * Create a TransactionSearchResult object from a Row
+	 * 
+	 * @param row
+	 * @return
+	 * @throws SQLException
+	 */
+	private TransactionSearchResult toTransactionResult(ResultSet row) throws SQLException {
+
+
+		int paymentID = row.getInt(1);
+		String transactionID = row.getString(2);
+		long ts = row.getTimestamp(3).getTime();
+		double settleAmt=row.getDouble(4);
+		String type = row.getString(5);
+		int status = row.getInt(6);
+		int wfid=row.getInt(7);
+	
+		String formattedSettleDate = df.format(new java.util.Date(ts));
+
+		TransactionSearchResult result = new TransactionSearchResultBuilder(paymentID)
+				.withTransactionID(transactionID)
+				.withSettleAmount(settleAmt)
+				.withSettleDate(formattedSettleDate)
+				.withType(type)
+				.withStatus(status)
+				.withWorkflowID(wfid)
+				.build();
+				
 		return result;
 
 	}
@@ -329,12 +443,12 @@ public class FilesRestServer extends BaseRestServer {
 		return builder.build();
 
 	}
-	
+
 	private String getPaginationString(MultivaluedMap<String, String> par) {
-		
+
 		String off = par.getFirst("start");
 		String rows = par.getFirst("rows");
-		
+
 		return " OFFSET " + off + " ROWS FETCH FIRST " + rows + " ROWS ONLY";
 	}
 }
