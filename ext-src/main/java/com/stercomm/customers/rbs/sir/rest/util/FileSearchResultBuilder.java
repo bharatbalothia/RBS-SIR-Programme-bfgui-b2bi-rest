@@ -86,35 +86,37 @@ public class FileSearchResultBuilder {
 
 	public FileSearchResultBuilder withType(String type) {
 
-		this.type = type;
+		this.type = noNull(type);
 
 		return this;
 	}
 
 	public FileSearchResultBuilder withReference(String reference) {
+	
 
-		this.reference = reference;
+		this.reference = noNull(reference);
 
 		return this;
 	}
 	
 	public FileSearchResultBuilder withDocID(String docID) {
 
-		this.docID = docID;
-
+		
+		this.docID = noNull(docID);
 		return this;
 	}
 
 	public FileSearchResultBuilder withErrorCode(String errorCode) {
+		
 
-		this.errorCode = errorCode;
+		this.errorCode = noNull(errorCode);
 
 		return this;
 	}
 
 	public FileSearchResultBuilder withFilename(String filename) {
 
-		this.filename = filename;
+		this.filename = noNull(filename);
 
 		return this;
 	}
@@ -128,7 +130,7 @@ public class FileSearchResultBuilder {
 
 	public FileSearchResultBuilder withService(String service) {
 
-		this.service = service;
+		this.service = noNull(service);
 
 		return this;
 	}
@@ -144,6 +146,11 @@ public class FileSearchResultBuilder {
 		this.entityID = entityID;
 
 		return this;
+	}
+
+	private String noNull(String s) {
+		
+		return (s!=null?s:"");
 	}
 
 }
