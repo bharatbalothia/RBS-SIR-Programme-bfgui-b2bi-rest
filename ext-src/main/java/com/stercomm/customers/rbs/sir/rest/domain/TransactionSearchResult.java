@@ -2,6 +2,9 @@ package com.stercomm.customers.rbs.sir.rest.domain;
 
 import javax.xml.bind.annotation.XmlRootElement;
 
+import org.codehaus.jackson.map.annotate.JsonSerialize;
+import org.codehaus.jackson.map.annotate.JsonSerialize.Inclusion;
+
 /**
  * 
  * A transaction search Result
@@ -18,20 +21,22 @@ public class TransactionSearchResult {
 	private int status;
 	private String transactionID;
 	private String type;
-	private String timestamp;
 	private String settleDate;
 	private double settleAmount;
 	private int workflowID;
+	private String entity;
+	private String paymentBIC;
+	private String filename;
+	private String reference;
+	private Boolean isoutbound;  
 
 
 
-	public TransactionSearchResult(int id, int status, String transactionID, String timestamp,
-			 String type, int workflowID, String settleDate, double settleAmount) {
-
+	public TransactionSearchResult(int id, int status, String transactionID, String type,
+			  int workflowID, String settleDate, double settleAmount) {
 			
 		this.id = id;
-		this.status = status;
-		this.timestamp = timestamp;
+		this.status = status;	
 		this.settleAmount=settleAmount;
 		this.settleDate=settleDate;
 		this.transactionID = transactionID;
@@ -39,14 +44,105 @@ public class TransactionSearchResult {
 		this.type = type;
 	}
 
+	public TransactionSearchResult(int id, int status, String transactionID, String type,
+			  int workflowID, String settleDate, double settleAmount, boolean isoutbound, String ref, String filename, String paymentBIC, String entity) {
+			
+		this(id, status, transactionID, type, workflowID, settleDate, settleAmount);
+		this.isoutbound = isoutbound;
+		this.reference  = ref;	
+		this.filename=filename;
+		this.paymentBIC=paymentBIC;
+		this.entity = entity;
+		
+	}
 	
 
 	
+	@JsonSerialize(include = Inclusion.NON_NULL)
+	public String getEntity() {
+		return entity;
+	}
+
+
+
+
+
+	public void setEntity(String entity) {
+		this.entity = entity;
+	}
+
+
+
+
+	@JsonSerialize(include = Inclusion.NON_NULL)
+	public String getPaymentBIC() {
+		return paymentBIC;
+	}
+
+
+
+
+
+	public void setPaymentBIC(String paymentBIC) {
+		this.paymentBIC = paymentBIC;
+	}
+
+
+
+
+	@JsonSerialize(include = Inclusion.NON_NULL)
+	public String getFilename() {
+		return filename;
+	}
+
+
+
+
+
+	public void setFilename(String filename) {
+		this.filename = filename;
+	}
+
+
+
+
+	@JsonSerialize(include = Inclusion.NON_NULL)
+	public String getReference() {
+		return reference;
+	}
+
+
+
+
+
+	public void setReference(String reference) {
+		this.reference = reference;
+	}
+
+
+
+
+	@JsonSerialize(include = Inclusion.NON_NULL)
+	public Boolean isIsoutbound() {
+		return isoutbound;
+	}
+
+
+
+
+
+	public void setIsoutbound(boolean isoutbound) {
+		this.isoutbound = isoutbound;
+	}
+
+
+
+
 
 	@Override
 	public String toString() {
 		return "TransactionSearchResult [id=" + id + ", status=" + status + ", transactionID=" + transactionID
-				+ ", type=" + type + ", timestamp=" + timestamp + ", settleDate=" + settleDate + ", settleAmount="
+				+ ", type=" + type + ", settleDate=" + settleDate + ", settleAmount="
 				+ settleAmount + ", workflowID=" + workflowID + "]";
 	}
 
@@ -93,16 +189,12 @@ public class TransactionSearchResult {
 	}
 
 	
-
+	
 	public String getType() {
 		return type;
 	}
 
 	
-	public String getTimestamp() {
-		return timestamp;
-	}
-
 	public int getWorkflowID() {
 		return workflowID;
 	}
@@ -120,11 +212,7 @@ public class TransactionSearchResult {
 		this.type = type;
 	}
 
-	
 
-	public void setTimestamp(String ts) {
-		this.timestamp = ts;
-	}
 
 	public void setWorkflowID(int workflowID) {
 		this.workflowID = workflowID;

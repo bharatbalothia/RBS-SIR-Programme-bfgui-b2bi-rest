@@ -18,29 +18,37 @@ public class TransactionSearchResultBuilder {
 	private int paymentID;
 	private int status;
 	private String type;
-	private String timestamp;
 	private int workflowID;
 	private String settleDate;
 	private double settleAmount;
 	private String transactionID;
+	private boolean isoutbound;
+	private String entity;
+	private String ref;
+	private String paymentBIC;
+	private TransactionResultType rowType;
+	private String filename;
 	
 
-	public TransactionSearchResultBuilder(int id) {
+	public TransactionSearchResultBuilder(int id, TransactionResultType type) {
 
 		this.paymentID = id;
+		this.rowType=type;
 	}
 
 	public TransactionSearchResult build() {
 
-		return new TransactionSearchResult(paymentID, status, transactionID, type, timestamp, workflowID, settleDate, settleAmount);
+		if (rowType == TransactionResultType.SUMMARY) {
+		
+			return new TransactionSearchResult(paymentID, status, transactionID, type, workflowID, settleDate, settleAmount);
+		}
+		else {
+			
+			return new TransactionSearchResult(paymentID, status, transactionID, type, workflowID, settleDate, settleAmount, isoutbound, ref, filename, paymentBIC, entity);
+		}
 	}
 	 
-	public TransactionSearchResultBuilder withTimestamp(String timestamp) {
 
-		this.timestamp = timestamp;
-
-		return this;
-	}
 
 	public TransactionSearchResultBuilder withWorkflowID(int workflowID) {
 
@@ -93,6 +101,42 @@ public class TransactionSearchResultBuilder {
 	public TransactionSearchResultBuilder withPaymentID(int pid) {
 
 		this.paymentID = pid;
+
+		return this;
+	}
+
+	
+	public TransactionSearchResultBuilder withFilename(String filename) {
+
+		this.filename = noNull(filename);
+
+		return this;
+	}
+	
+	public TransactionSearchResultBuilder withPaymentBIC(String paymentBIC) {
+
+		this.paymentBIC = noNull(paymentBIC);
+
+		return this;
+	}
+	
+	public TransactionSearchResultBuilder withReference(String ref) {
+
+		this.ref = noNull(ref);
+
+		return this;
+	}
+	
+	public TransactionSearchResultBuilder withEntity(String e) {
+
+		this.entity = noNull(e);
+
+		return this;
+	}
+	
+	public TransactionSearchResultBuilder withIsoutbound(boolean b) {
+
+		this.isoutbound = b;
 
 		return this;
 	}

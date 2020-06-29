@@ -23,12 +23,13 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
 
+import com.stercomm.customers.rbs.sir.rest.domain.Error;
 import com.stercomm.customers.rbs.sir.rest.domain.FileSearchResult;
 import com.stercomm.customers.rbs.sir.rest.domain.TransactionSearchResult;
 import com.stercomm.customers.rbs.sir.rest.util.FileSearchResultBuilder;
 import com.stercomm.customers.rbs.sir.rest.util.FileSearchWhereClauseBuilder;
+import com.stercomm.customers.rbs.sir.rest.util.TransactionResultType;
 import com.stercomm.customers.rbs.sir.rest.util.TransactionSearchResultBuilder;
-import com.stercomm.customers.rbs.sir.rest.domain.Error;
 import com.sterlingcommerce.woodstock.util.frame.Manager;
 import com.sterlingcommerce.woodstock.util.frame.jdbc.Conn;
 
@@ -83,14 +84,16 @@ public class FilesRestServer extends BaseRestServer {
 
 		// now contstruct the query
 		StringBuffer query = new StringBuffer();
-		
-		query.append("SELECT bundle_id, filename, reference, btimestamp, btype, entity_id, status, error, wf_id, message_id, "
-					+ "isoutbound, isoverride, service, doc_id, "
-					+ "(select count(*) from SCT_PAYMENT p1, SCT_BUNDLE b1 where p1.bundle_id = b1.bundle_id and "
-					+ "b1.bundle_id=bun.bundle_id)+"
-					+ "(select count(*) from SCT_PAYMENT_ARCHIVE p2, SCT_BUNDLE b2 where p2.bundle_id = b2.bundle_id "
-					+ "and b2.bundle_id=bun.bundle_id) "
-					+ "FROM SCT_BUNDLE bun ");
+
+		query.append(
+				"SELECT bundle_id, filename, reference, btimestamp, btype, entity_id, status, error, wf_id, message_id, "
+						+ "isoutbound, isoverride, service, doc_id, "
+						// this next part totals the transactions (PAYMENT AND PAYMENT_ARCHIVE rows for
+						// each bundle
+						+ "(select count(*) from SCT_PAYMENT p1, SCT_BUNDLE b1 where p1.bundle_id = b1.bundle_id and "
+						+ "b1.bundle_id=bun.bundle_id)+"
+						+ "(select count(*) from SCT_PAYMENT_ARCHIVE p2, SCT_BUNDLE b2 where p2.bundle_id = b2.bundle_id "
+						+ "and b2.bundle_id=bun.bundle_id) " + "FROM SCT_BUNDLE bun ");
 
 		// are there any query params, if so create a WHERE?
 		if (uriInfo.getQueryParameters().keySet().size() > 0) {
@@ -103,7 +106,7 @@ public class FilesRestServer extends BaseRestServer {
 		}
 
 		// need to order by something
-		String orderBy = " ORDER BY BUNDLE_ID DESC";
+		String orderBy = " ORDER BY btimestamp DESC, BUNDLE_ID DESC";
 		query.append(orderBy);
 
 		// append the pagination we worked out earlier
@@ -156,38 +159,43 @@ public class FilesRestServer extends BaseRestServer {
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 
-		boolean is404=false;
-		
+		boolean is404 = false;
+
 		TransactionSearchResult result = null;
 
 		// now construct the query
 		StringBuffer query = new StringBuffer();
-		
-		//select p.payment_id, p.payment_bic, b.entity, b.filename, p.reference, p.TRANSACTION_ID, p.type, p.isoutbound, 
-		// p.ptimestamp, b.wf_id, p.SETTLE_DATE, p.SETTLE_AMT, p.status  FROM SCP_PAYMENT p, SCT_BUNDLE b 
-		//where p.payment_id = ?  and p.bundle_id = b.bundle_id
-		
-		query.append("select p.payment_id, p.payment_bic, b.entity, b.filename, p.reference, p.TRANSACTION_ID, p.type, p.isoutbound," + 
-				"		 p.ptimestamp, b.wf_id, p.SETTLE_DATE, p.SETTLE_AMT, p.status  FROM SCP_PAYMENT p, SCT_BUNDLE b " + 
-				"		where p.payment_id = ?  and b.bundle_id = ? and p.bundle_id = b.bundle_id ");
+
+		// select p.payment_id, p.payment_bic, b.entity, b.filename, p.reference,
+		// p.TRANSACTION_ID, p.type, p.isoutbound,
+		// p.ptimestamp, b.wf_id, p.SETTLE_DATE, p.SETTLE_AMT, p.status FROM SCP_PAYMENT
+		// p, SCT_BUNDLE b
+		// where p.payment_id = ? and p.bundle_id = b.bundle_id
+
+		query.append(
+				"select p.payment_id, p.TRANSACTION_ID, p.SETTLE_DATE, p.SETTLE_AMT,  p.type, "
+				+ "p.status,p.wf_id, p.payment_bic, e.entity, b.filename, p.reference, p.isoutbound "
+				+ "FROM SCT_PAYMENT p, SCT_BUNDLE b, SCT_ENTITY e "
+				+ "where p.payment_id = ? and b.bundle_id = ? and p.bundle_id = b.bundle_id and e.entity_id = b.entity_id ");
 
 		String fullQuery = query.toString();
-		LOGGER.info("Query : " + fullQuery);
+		LOGGER.info("Query for single bundle/trans (" + bundleid + ","+transID +"): " + fullQuery);
 
 		try {
 			conn = Conn.getConnection();
 			ps = conn.prepareStatement(fullQuery);
-			ps.setLong(1,  Long.parseLong(transID));
-			ps.setLong(2, Long.parseLong(bundleid));
-			rs = ps.executeQuery();
-
-			if (rs.next() == false) {
+			ps.setInt(1, Integer.parseInt(transID));
+			ps.setInt(2, Integer.parseInt(bundleid));
+			rs = ps.executeQuery();		
+			
+			if (rs.next()) {
+				
+				result = toTransactionResult(rs, TransactionResultType.DETAIL);
+			}
+			else {
 				LOGGER.info("ResultSet is empty in Java");
-				is404=true;
-			} else {
-				do {
-					result = toTransactionResult(rs);
-				} while (rs.next());
+				is404 = true;
+				
 			}
 
 		}
@@ -211,20 +219,18 @@ public class FilesRestServer extends BaseRestServer {
 			}
 		}
 
-		Status s = (!is404?Status.OK:Status.NOT_FOUND);
-		
-		if (s==Status.OK) {
-			
+		Status s = (!is404 ? Status.OK : Status.NOT_FOUND);
+
+		if (s == Status.OK) {
+
 			return Response.status(s).entity(result).build();
-		}
-		else {
+		} else {
 			Error e = new Error();
 			e.setAttribute("payment id,bundleid");
 			e.setMessage("Payment id or bundle id not found");
-			
+
 			return Response.status(s).entity(e).build();
 		}
-		
 
 	}
 
@@ -276,7 +282,7 @@ public class FilesRestServer extends BaseRestServer {
 			rs = ps.executeQuery();
 
 			while (rs.next()) {
-				TransactionSearchResult result = toTransactionResult(rs);
+				TransactionSearchResult result = toTransactionResult(rs, TransactionResultType.SUMMARY);
 				results.add(result);
 			}
 		}
@@ -351,22 +357,61 @@ public class FilesRestServer extends BaseRestServer {
 	 * @return
 	 * @throws SQLException
 	 */
-	private TransactionSearchResult toTransactionResult(ResultSet row) throws SQLException {
+	private TransactionSearchResult toTransactionResult(ResultSet row, TransactionResultType resultType)
+			throws SQLException {
 
-		int paymentID = row.getInt(1);
-		String transactionID = row.getString(2);
-		long ts = row.getTimestamp(3).getTime();
-		double settleAmt = row.getDouble(4);
-		String type = row.getString(5);
-		int status = row.getInt(6);
-		int wfid = row.getInt(7);
+		// returned for summary
 
+		int paymentID;
+		String transactionID=null;
+		long ts;
+		double settleAmt;
+		String type=null;
+		int wfid;
+		int status;
+		
+		// returned for detail only (in addition to summary)
+		String bic=null;
+		String entity=null;
+		String filename=null;
+		String ref=null;
+		int ob = 0;
+		
+		// p.payment_id, p.TRANSACTION_ID, p.SETTLE_DATE, p.SETTLE_AMT, 
+		// p.type, p.status,p.wf_id, p.payment_bic, e.entity, b.filename, p.reference, p.isoutbound
+		
+		 paymentID = row.getInt(1);
+		 transactionID = row.getString(2);
+		 ts = row.getTimestamp(3).getTime();
+		 settleAmt = row.getDouble(4);
+		 type = row.getString(5);
+		 wfid = row.getInt(7);
+		 status = row.getInt(6);
+		 
+		if (resultType == TransactionResultType.DETAIL) {
+			 bic = row.getString(8);
+			 entity = row.getString(9);
+			 filename = row.getString(10);
+			 ref = row.getString(11);
+			 ob = row.getInt(12);
+		}
+		
 		String formattedSettleDate = df.format(new java.util.Date(ts));
 
-		TransactionSearchResult result = new TransactionSearchResultBuilder(paymentID).withTransactionID(transactionID)
-				.withSettleAmount(settleAmt).withSettleDate(formattedSettleDate).withType(type).withStatus(status)
-				.withWorkflowID(wfid).build();
+		TransactionSearchResult result = null;
 
+		if (resultType == TransactionResultType.SUMMARY) {
+
+			result = new TransactionSearchResultBuilder(paymentID, resultType).withTransactionID(transactionID)
+					.withSettleAmount(settleAmt).withSettleDate(formattedSettleDate).withType(type).withStatus(status)
+					.withWorkflowID(wfid).build();
+		} else if (resultType == TransactionResultType.DETAIL) {
+
+			result = new TransactionSearchResultBuilder(paymentID, resultType).withTransactionID(transactionID)
+					.withSettleAmount(settleAmt).withSettleDate(formattedSettleDate).withType(type).withStatus(status)
+					.withWorkflowID(wfid).withEntity(entity).withPaymentBIC(bic).withFilename(filename)
+					.withReference(ref).withIsoutbound(ob == 1 ? true : false).build();
+		}
 		return result;
 
 	}

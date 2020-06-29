@@ -62,13 +62,14 @@ public class FileSearchWhereClauseBuilder {
 
 	public FileSearchWhereClauseBuilder withType(String type) {
 
-		buf.append("btype='" + type + "'");
+		buf.append("upper(btype) like upper('" + type + "%')");
 		return this;
 	}
 
 	public FileSearchWhereClauseBuilder withReference(String reference) {
 
-		buf.append("reference='" + reference + "'");
+		buf.append("upper(reference) like upper('" + reference + "%')");
+		
 		return this;
 	}
 	
@@ -92,7 +93,7 @@ public class FileSearchWhereClauseBuilder {
 
 	public FileSearchWhereClauseBuilder withFilename(String filename) {
 
-		buf.append("filename like '%" + filename + "%'");
+		buf.append("upper(filename) like upper('" + filename + "%')");
 		return this;
 	}
 
@@ -104,7 +105,7 @@ public class FileSearchWhereClauseBuilder {
 
 	public FileSearchWhereClauseBuilder withService(String service) {
 
-		buf.append("service='" + service+"'");
+		buf.append("upper(service) like upper('" + service+"%')");
 		return this;
 	}
 
