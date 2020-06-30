@@ -82,7 +82,7 @@ public class FilesRestServer extends BaseRestServer {
 		uriInfo.getQueryParameters().remove("start");
 		uriInfo.getQueryParameters().remove("rows");
 
-		// now contstruct the query
+		// now construct the query
 		StringBuffer query = new StringBuffer();
 
 		query.append(
