@@ -28,6 +28,7 @@ public class TransactionSearchResultBuilder {
 	private String paymentBIC;
 	private TransactionResultType rowType;
 	private String filename;
+	private String fileID;
 	
 
 	public TransactionSearchResultBuilder(int id, TransactionResultType type) {
@@ -53,6 +54,13 @@ public class TransactionSearchResultBuilder {
 	public TransactionSearchResultBuilder withWorkflowID(int workflowID) {
 
 		this.workflowID = workflowID;
+
+		return this;
+	}
+
+	public TransactionSearchResultBuilder withFileID(String fileID) {
+
+		this.fileID = fileID;
 
 		return this;
 	}

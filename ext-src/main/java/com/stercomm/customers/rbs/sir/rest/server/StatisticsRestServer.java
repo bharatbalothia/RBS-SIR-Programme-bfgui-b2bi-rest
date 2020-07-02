@@ -68,7 +68,11 @@ public class StatisticsRestServer extends BaseRestServer {
 			"UNION SELECT COUNT(*) AS tc " + 
 			"FROM SCT_PAYMENT_ARCHIVE trans WHERE trans.PTIMESTAMP > (SYSDATE-7) AND PAYMENT_ID>0 AND ISOUTBOUND =2)";
 	
-	private Map<StatsResultType, String> queryMap = null;
+	private static final String QUERY_SCT_ALERTS_FILE="SELECT count(*) AS bundleCount FROM SCT_BUNDLE bun where bun.STATUS < 0 AND SERVICE='SCT'";
+	private static final String QUERY_SCT_ALERTS_TX="SELECT count(*) AS transCount FROM SCT_PAYMENT pay where pay.STATUS < 0 AND MESSAGE_ID>0";
+	
+	private Map<StatsResultType, String> sctStatsQueryMap = null;
+	private Map<StatsResultType, String> sctAlertsQueryMap = null;
 
 	@PostConstruct
 	private void init() {
@@ -82,16 +86,22 @@ public class StatisticsRestServer extends BaseRestServer {
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
-		queryMap = new HashMap<StatsResultType, String>();
-		queryMap.put(StatsResultType.SCT_FILES_HOUR, QUERY_SCT_FILE_HOUR);
-		queryMap.put(StatsResultType.SCT_FILES_DAY, QUERY_SCT_FILE_DAY);
-		queryMap.put(StatsResultType.SCT_FILES_WEEK, QUERY_SCT_FILE_WEEK);
-		queryMap.put(StatsResultType.SCT_TX_HOUR, QUERY_SCT_TX_HOUR);
-		queryMap.put(StatsResultType.SCT_TX_DAY, QUERY_SCT_TX_DAY);
-		queryMap.put(StatsResultType.SCT_TX_WEEK, QUERY_SCT_TX_WEEK);
-		queryMap.put(StatsResultType.SCT_PAW_HOUR, QUERY_SCT_PAW_HOUR);
-		queryMap.put(StatsResultType.SCT_PAW_DAY, QUERY_SCT_PAW_DAY);
-		queryMap.put(StatsResultType.SCT_PAW_WEEK, QUERY_SCT_PAW_WEEK);
+		sctStatsQueryMap = new HashMap<StatsResultType, String>();
+		sctStatsQueryMap.put(StatsResultType.SCT_FILES_HOUR, QUERY_SCT_FILE_HOUR);
+		sctStatsQueryMap.put(StatsResultType.SCT_FILES_DAY, QUERY_SCT_FILE_DAY);
+		sctStatsQueryMap.put(StatsResultType.SCT_FILES_WEEK, QUERY_SCT_FILE_WEEK);
+		sctStatsQueryMap.put(StatsResultType.SCT_TX_HOUR, QUERY_SCT_TX_HOUR);
+		sctStatsQueryMap.put(StatsResultType.SCT_TX_DAY, QUERY_SCT_TX_DAY);
+		sctStatsQueryMap.put(StatsResultType.SCT_TX_WEEK, QUERY_SCT_TX_WEEK);
+		sctStatsQueryMap.put(StatsResultType.SCT_PAW_HOUR, QUERY_SCT_PAW_HOUR);
+		sctStatsQueryMap.put(StatsResultType.SCT_PAW_DAY, QUERY_SCT_PAW_DAY);
+		sctStatsQueryMap.put(StatsResultType.SCT_PAW_WEEK, QUERY_SCT_PAW_WEEK);
+		
+		sctAlertsQueryMap = new HashMap<StatsResultType, String>();
+		sctAlertsQueryMap.put(StatsResultType.SCT_ALERTS_FILE, QUERY_SCT_ALERTS_FILE);
+		sctAlertsQueryMap.put(StatsResultType.SCT_ALERTS_TX, QUERY_SCT_ALERTS_TX);
+		
+		
 	}
 
 	@GET
@@ -154,12 +164,12 @@ public class StatisticsRestServer extends BaseRestServer {
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 		List<StatsSearchResult> results = new ArrayList<StatsSearchResult>();
-		LOGGER.info("stats queries for " + queryMap.keySet());
-		for (StatsResultType type : queryMap.keySet()) {
+		LOGGER.info("stats queries for " + sctStatsQueryMap.keySet());
+		for (StatsResultType type : sctStatsQueryMap.keySet()) {
 
 			try {
 				conn = Conn.getConnection();
-				ps = conn.prepareStatement(queryMap.get(type));
+				ps = conn.prepareStatement(sctStatsQueryMap.get(type));
 				rs = ps.executeQuery();
 
 				while (rs.next()) {
@@ -171,6 +181,58 @@ public class StatisticsRestServer extends BaseRestServer {
 
 			catch (Exception e) {
 				LOGGER.severe("SQL Error generating stats : " + e.getMessage());
+
+			} finally {
+				try {
+					if (rs != null) {
+						rs.close();
+					}
+					if (ps != null) {
+						ps.close();
+					}
+					if (conn != null) {
+						Conn.freeConnection(conn);
+					}
+				} catch (SQLException se) {
+					LOGGER.severe("SQL exception : " + se.getMessage());
+				}
+			}
+		}
+		return Response.status(Status.OK).entity(results).build();
+
+	}
+	/**
+	 * Gets stats for the relevant period
+	 * 
+	 * @param period
+	 * @return
+	 */
+	@GET
+	@Path("/sct-alerts")
+	@Produces(MediaType.APPLICATION_JSON)
+	public Response getSCTAlerts() {
+
+		Connection conn = null;
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		List<StatsSearchResult> results = new ArrayList<StatsSearchResult>();
+	
+		for (StatsResultType type : sctAlertsQueryMap.keySet()) {
+
+			try {
+				conn = Conn.getConnection();
+				ps = conn.prepareStatement(sctAlertsQueryMap.get(type));
+				rs = ps.executeQuery();
+
+				while (rs.next()) {
+					StatsSearchResult s = new StatsSearchResult(rs.getInt(1), type);
+					results.add(s);
+				}
+				
+			}
+
+			catch (Exception e) {
+				LOGGER.severe("SQL Error generating alert stats : " + e.getMessage());
 
 			} finally {
 				try {

@@ -1,5 +1,9 @@
 package com.stercomm.customers.rbs.sir.rest.server;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
@@ -7,9 +11,14 @@ import java.util.logging.LogManager;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 
+import com.stercomm.customers.rbs.sir.rest.domain.TransactionSearchResult;
+import com.stercomm.customers.rbs.sir.rest.util.TransactionResultType;
+import com.stercomm.customers.rbs.sir.rest.util.TransactionSearchResultBuilder;
+
 public class BaseRestServer {
 	
 	protected static final String FORMAT_STRING = "%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS %4$s %2$s %5$s%6$s%n";
+	protected final DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
 
 	protected Logger setupLogging(boolean logToConsole, String logFile) throws Exception {
 		// Setup the logging
@@ -34,5 +43,71 @@ public class BaseRestServer {
 		return thisLogger;
 	}
 
+	/**
+	 * Create a TransactionSearchResult object from a Row
+	 * 
+	 * @param row
+	 * @return
+	 * @throws SQLException
+	 */
+	protected TransactionSearchResult toTransactionSearchResult(ResultSet row, TransactionResultType resultType)
+			throws SQLException {
 
+		// returned for summary
+
+		int paymentID;
+		String transactionID=null;
+		long ts;
+		double settleAmt;
+		String type=null;
+		int wfid;
+		int status;
+		String fileID;
+		
+		// returned for detail only (in addition to summary)
+		String bic=null;
+		String entity=null;
+		String filename=null;
+		String ref=null;
+		int ob = 0;
+		
+		// p.payment_id, p.TRANSACTION_ID, p.SETTLE_DATE, p.SETTLE_AMT, 
+		// p.type, p.status,p.wf_id, p.payment_bic, e.entity, b.filename, p.reference, p.isoutbound
+		
+		 paymentID = row.getInt(1);
+		 transactionID = row.getString(2);
+		 ts = row.getTimestamp(3).getTime();
+		 settleAmt = row.getDouble(4);
+		 type = row.getString(5);
+		 wfid = row.getInt(7);
+		 status = row.getInt(6);
+		 fileID=row.getString(8);
+		 
+		if (resultType == TransactionResultType.DETAIL) {
+			 bic = row.getString(9);
+			 entity = row.getString(10);
+			 filename = row.getString(11);
+			 ref = row.getString(12);
+			 ob = row.getInt(13);
+		}
+		
+		String formattedSettleDate = df.format(new java.util.Date(ts));
+
+		TransactionSearchResult result = null;
+
+		if (resultType == TransactionResultType.SUMMARY) {
+
+			result = new TransactionSearchResultBuilder(paymentID, resultType).withTransactionID(transactionID)
+					.withSettleAmount(settleAmt).withSettleDate(formattedSettleDate).withType(type).withStatus(status)
+					.withWorkflowID(wfid).withFileID(fileID).build();
+		} else if (resultType == TransactionResultType.DETAIL) {
+
+			result = new TransactionSearchResultBuilder(paymentID, resultType).withTransactionID(transactionID)
+					.withSettleAmount(settleAmt).withSettleDate(formattedSettleDate).withType(type).withStatus(status)
+					.withWorkflowID(wfid).withEntity(entity).withPaymentBIC(bic).withFilename(filename)
+					.withReference(ref).withIsoutbound(ob == 1 ? true : false).withFileID(fileID).build();
+		}
+		return result;
+
+	}
 }
