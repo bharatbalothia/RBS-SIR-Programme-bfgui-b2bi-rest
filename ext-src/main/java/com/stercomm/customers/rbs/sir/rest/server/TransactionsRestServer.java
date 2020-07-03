@@ -78,7 +78,7 @@ public class TransactionsRestServer extends BaseRestServer {
 
 		query.append(
 				"select p.payment_id, p.transaction_id,p.settle_date,p.settle_amt,p.type,p.status,p.wf_id, p.bundle_id ");
-		query.append("from sct_payment p, sct_entity e, sct_bundle b ");
+		query.append("from (select * from sct_payment UNION select * from sct_payment_archive) p, sct_entity e, sct_bundle b ");
 		query.append("where b.bundle_id=p.bundle_id and e.entity_id = b.entity_id ");
 
 		// are there any query params, if so create a WHERE?
@@ -113,7 +113,7 @@ public class TransactionsRestServer extends BaseRestServer {
 		}
 
 		catch (Exception e) {
-			LOGGER.severe("SQL Error searching the SCT_BUNDLE table : " + e.getMessage());
+			LOGGER.severe("SQL Error searching for transactions : " + e.getMessage());
 
 		} finally {
 			try {
@@ -161,6 +161,16 @@ public class TransactionsRestServer extends BaseRestServer {
 
 		if (s != null) {
 			builder.withService(s);
+			numElementsSoFar++;
+			if (numElementsSoFar < numOfParams) {
+				builder.and();
+			}
+		}
+		
+		s = qsparams.getFirst("direction");
+
+		if (s != null) {
+			builder.withDirection(s);
 			numElementsSoFar++;
 			if (numElementsSoFar < numOfParams) {
 				builder.and();
@@ -224,7 +234,7 @@ public class TransactionsRestServer extends BaseRestServer {
 		}
 
 	
-		s = qsparams.getFirst("settlementFrom");
+		s = qsparams.getFirst("settlement-from");
 
 		if (s != null) {
 			builder.withSettlementAfter(s);
@@ -234,7 +244,7 @@ public class TransactionsRestServer extends BaseRestServer {
 			}
 		}
 
-		s = qsparams.getFirst("settlementTo");
+		s = qsparams.getFirst("settlement-to");
 
 		if (s != null) {
 			builder.withSettlementBefore(s);

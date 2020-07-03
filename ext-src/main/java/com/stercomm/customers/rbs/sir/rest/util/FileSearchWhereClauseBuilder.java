@@ -50,13 +50,13 @@ public class FileSearchWhereClauseBuilder {
 	public FileSearchWhereClauseBuilder before(String before) {
 		
 		
-		buf.append("btimestamp<to_timestamp('" + before + "','yyyy-MM-dd\"T\"HH:mi:ss')");
+		buf.append("btimestamp<to_timestamp('" + before + "','yyyy-MM-dd\"T\"HH24:mi:ss')");
 		return this;
 	}
 	
 	public FileSearchWhereClauseBuilder after(String after) { 
 
-		buf.append("btimestamp>to_timestamp('" + after + "','yyyy-MM-dd\"T\"HH:mi:ss')");
+		buf.append("btimestamp>to_timestamp('" + after + "','yyyy-MM-dd\"T\"HH24:mi:ss')");
 		return this;
 	}
 

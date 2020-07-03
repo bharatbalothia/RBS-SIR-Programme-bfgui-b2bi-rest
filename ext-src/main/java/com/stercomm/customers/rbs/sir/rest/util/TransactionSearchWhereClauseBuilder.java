@@ -35,13 +35,13 @@ public class TransactionSearchWhereClauseBuilder {
 	public TransactionSearchWhereClauseBuilder withSettlementBefore(String before) {
 		
 		
-		buf.append("p.SETTLE_DATE<to_timestamp('" + before + "','yyyy-MM-dd\"T\"HH:mi:ss')");
+		buf.append("p.SETTLE_DATE<to_timestamp('" + before + "','yyyy-MM-dd\"T\"HH24:mi:ss')");
 		return this;
 	}
 	
 	public TransactionSearchWhereClauseBuilder withSettlementAfter(String after) { 
 
-		buf.append("p.SETTLE_DATE>to_timestamp('" + after + "','yyyy-MM-dd\"T\"HH:mi:ss')");
+		buf.append("p.SETTLE_DATE>to_timestamp('" + after + "','yyyy-MM-dd\"T\"HH24:mi:ss')");
 		return this;
 	}
 
@@ -54,6 +54,26 @@ public class TransactionSearchWhereClauseBuilder {
 	public TransactionSearchWhereClauseBuilder withReference(String reference) {
 
 		buf.append("upper(p.reference) like upper('" + reference + "%')");
+		
+		return this;
+	}
+	
+	public TransactionSearchWhereClauseBuilder withDirection(String direction) {
+
+		// test
+		String res = "1";
+		
+		if ("outbound".equalsIgnoreCase(direction)){
+			;	//use initialisation value
+		}
+		else if ("inbound".equalsIgnoreCase(direction))	{
+			res ="0";
+		}
+		else if ("payaway".equalsIgnoreCase(direction))	{
+			res ="2";
+		}
+		
+		buf.append("p.isoutbound="+res);
 		
 		return this;
 	}
@@ -90,12 +110,12 @@ public class TransactionSearchWhereClauseBuilder {
 
 	public TransactionSearchWhereClauseBuilder withService(String service) {
 
-		buf.append("upper(p.service) like upper('" + service+"%')");
+		buf.append("upper(b.service) like upper('" + service+"%')");
 		return this;
 	}
 
 	public TransactionSearchWhereClauseBuilder withTransactionID(String id) {
-		buf.append("upper(p.TRANSACTION_ID) lke upper('" + id +"%')");
+		buf.append("upper(p.TRANSACTION_ID) like upper('" + id +"%')");
 		return this;
 	}
 

@@ -29,11 +29,20 @@ public class TransactionSearchResult {
 	private String filename;
 	private String reference;
 	private Boolean isoutbound;  
+	private String fileID;
 
 
+
+	public String getFileID() {
+		return fileID;
+	}
+
+	public void setFileID(String fileID) {
+		this.fileID = fileID;
+	}
 
 	public TransactionSearchResult(int id, int status, String transactionID, String type,
-			  int workflowID, String settleDate, double settleAmount) {
+			  int workflowID, String settleDate, double settleAmount, String fileID) {
 			
 		this.id = id;
 		this.status = status;	
@@ -42,12 +51,13 @@ public class TransactionSearchResult {
 		this.transactionID = transactionID;
 		this.workflowID = workflowID;
 		this.type = type;
+		this.fileID=fileID;
 	}
 
 	public TransactionSearchResult(int id, int status, String transactionID, String type,
-			  int workflowID, String settleDate, double settleAmount, boolean isoutbound, String ref, String filename, String paymentBIC, String entity) {
+			  int workflowID, String settleDate, double settleAmount, String fileID, boolean isoutbound, String ref, String filename, String paymentBIC, String entity) {
 			
-		this(id, status, transactionID, type, workflowID, settleDate, settleAmount);
+		this(id, status, transactionID, type, workflowID, settleDate, settleAmount, fileID);
 		this.isoutbound = isoutbound;
 		this.reference  = ref;	
 		this.filename=filename;
