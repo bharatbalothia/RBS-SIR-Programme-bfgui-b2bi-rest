@@ -87,10 +87,10 @@ public class SWIFTRoutingRule {
 
 			// switch prefix based onm the entityType
 			String prefix = entityType.equalsIgnoreCase("GPL")
-					? Manager.getProperties("GPL").getProperty("route.name.prefix.gpl")
-					: Manager.getProperties("GPL").getProperty("route.name.prefix.default");
-			final String suffix = Manager.getProperties("GPL").getProperty("route.name.suffix");
-			final String sep = Manager.getProperties("GPL").getProperty("route.name.separator");
+					? Manager.getProperties("gpl").getProperty("route.name.prefix.gpl")
+					: Manager.getProperties("gpl").getProperty("route.name.prefix.default");
+			final String suffix = Manager.getProperties("gpl").getProperty("route.name.suffix");
+			final String sep = Manager.getProperties("gpl").getProperty("route.name.separator");
 
 			this.routeName = prefix + entityName + sep + unresolvedRequestType + suffix;
 			return this;
@@ -138,7 +138,7 @@ public class SWIFTRoutingRule {
 			// resolve the request type
 
 			LOGGER.info("Establishing the resolved request type from : " + s);
-			String resolvedReqType = Manager.getProperties("GPL").getProperty("ui.rtm." + s);
+			String resolvedReqType = Manager.getProperties("gpl").getProperty("ui.rtm." + s);
 
 			if (resolvedReqType == null || resolvedReqType.equalsIgnoreCase("")) {
 				resolvedReqType = s.replaceAll(".", "");
@@ -155,10 +155,10 @@ public class SWIFTRoutingRule {
 
 			LOGGER.info("Establishing the workflow name from request type : " + requestType);
 
-			String s = Manager.getProperties("GPL").getProperty("route." + requestType);
+			String s = Manager.getProperties("gpl").getProperty("route." + requestType);
 
 			if ((s == null) || s.equals("")) {
-				String wf = Manager.getProperties("GPL").getProperty("routingrule.default.workflow");
+				String wf = Manager.getProperties("gpl").getProperty("routingrule.default.workflow");
 				LOGGER.info("No workflow match in properties : using default workflow name (" + wf + ")");
 				s = wf;
 			} else {
