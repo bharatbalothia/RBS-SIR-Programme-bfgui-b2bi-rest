@@ -8,6 +8,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement
 public class Event {
 	
+
 	@NotNull(message = "Field cannot be null")
 	@NotEmpty(message="Field cannot be empty")
 	private String actionBy;
