@@ -70,84 +70,7 @@ public class CertificatesRestServer extends BaseRestServer {
 
 	}
 
-	@GET
-	@Path("/chain")
-	@Produces(MediaType.APPLICATION_JSON)
-	public Response createAuthChain(@QueryParam("issuerdn") String issuerDN) {
-
-		Connection conn = null;
-		PreparedStatement ps = null;
-		ResultSet rs = null;
-
-		byte[] decodedIssuerDNBytes = Base64.getDecoder().decode(issuerDN);
-		String decodedIssuerDN = new String(decodedIssuerDNBytes, StandardCharsets.UTF_8);
-
-		List<AuthChainMember> chain = new ArrayList<AuthChainMember>();
-		String query = "select name, norm_subj_rdn, norm_issuer_rdn from ca_cert_info where "
-				+ "not_before < trunc(sysdate) and not_after > trunc(sysdate) and " + "norm_subj_rdn = ? ";
-		/*
-		 * String queryForRoot = "select name, norm_subj_rdn from ca_cert_info where "+
-		 * "not_before < trunc(sysdate) and not_after > trunc(sysdate) and "+
-		 * "norm_issuer_rdn = ? ";
-		 */
-		LOGGER.info("decodedIssuerDN : " + decodedIssuerDN);
-		try {
-			conn = Conn.getConnection();
-
-			// first time for the intermediate
-
-			ps = conn.prepareStatement(query);
-			ps.setString(1, decodedIssuerDN);
-			rs = ps.executeQuery();
-			String rootIssuerDN = null;
-			while (rs.next()) {
-				rootIssuerDN = rs.getString(3);
-				chain.add(toResult(rs));
-			}
-
-			// now again for the root
-			ps.close();
-			ps = conn.prepareStatement(query);
-			ps.setString(1, rootIssuerDN);
-
-			rs = ps.executeQuery();
-
-			while (rs.next()) {
-				chain.add(toResult(rs));
-			}
-
-		}
-
-		catch (Exception e) {
-			LOGGER.severe("SQL Error searching the CA_cert_info table : " + e.getMessage());
-
-		} finally {
-			try {
-				if (rs != null) {
-					rs.close();
-				}
-				if (ps != null) {
-					ps.close();
-				}
-				if (conn != null) {
-					Conn.freeConnection(conn);
-				}
-			} catch (SQLException se) {
-				LOGGER.severe("SQL exception : " + se.getMessage());
-			}
-		}
-
-		// if we have two in the chain, we are ok, right?
-		if (chain.size() == 2) {
-			return Response.status(Status.OK).entity(chain).build();
-		} else {
-			Error e = new Error();
-			e.setAttribute("chain");
-			e.setMessage("Could not construct a cert chain for the issuer DN.");
-			return Response.status(Status.NOT_FOUND).entity(e).build();
-		}
-
-	}
+	
 
 	@POST
 	@Path("/verify")
@@ -251,25 +174,7 @@ public class CertificatesRestServer extends BaseRestServer {
 		}
 	}
 
-	/**
-	 * Create a FileSearchResult object from a Row
-	 * 
-	 * @param row
-	 * @return
-	 * @throws SQLException
-	 */
-	private AuthChainMember toResult(ResultSet row) throws SQLException {
-
-		String name = row.getString(1);
-		String dn = row.getString(2);
-		AuthChainMember m = new AuthChainMember();
-		m.setCertificateName(name);
-		m.setSubjectDN(dn);
-
-		LOGGER.info("Created : " + m);
-		return m;
-
-	}
+	
 
 	private List<AuthChainMember> toAuthChainMemberList(Vector<CertificateInfoBase> authChain) {
 
@@ -281,7 +186,7 @@ public class CertificatesRestServer extends BaseRestServer {
 		while (acit.hasNext()) {
 			AuthChainMember member = new AuthChainMember();
 			CertificateInfoBase ctemp = acit.next();
-			member.setSubjectDN(ctemp.getSubjectRDN());
+			member.setSubjectDN(ctemp.getNormalizedSubjectRDN());
 			member.setCertificateName(ctemp.getName());
 			LOGGER.info("Adding to chain : " + member);
 			retval.add(member);
@@ -302,7 +207,7 @@ public class CertificatesRestServer extends BaseRestServer {
 	}
 	private void validatePost(Validator val, List<Error> errs, Certificate cert) {
 
-		LOGGER.info("Validating : " + cert.getCertName());
+		LOGGER.info("Validating a cert starting with > " + cert.getCertBody().substring(0, 20) + "...");
 		val.validate(cert).stream().forEach(violation -> {
 
 			String message = violation.getMessage();

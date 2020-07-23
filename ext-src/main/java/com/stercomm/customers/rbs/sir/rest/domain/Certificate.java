@@ -9,25 +9,14 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement
 public class Certificate {
 	
-	@NotNull(message = "Field cannot be null")
-	@NotEmpty(message="Field cannot be empty")
-	@XmlElement(name = "certificate-name")
-	private String certName;
+
 	
 	@NotNull(message = "Field cannot be null")
 	@NotEmpty(message="Field cannot be empty")
 	@XmlElement(name = "certificate-body")
 	private String certBody;
 
-	public String getCertName() {
-		return certName;
-	}
-
 	
-	public void setCertName(String certName) {
-		this.certName = certName;
-	}
-
 	public String getCertBody() {
 		return certBody;
 	}
@@ -36,9 +25,5 @@ public class Certificate {
 		this.certBody = certBody;
 	}
 
-	@Override
-	public String toString() {
-		return "Certificate [certName=" + certName + ", certBody=" + certBody + "]";
-	}
 	
 }
