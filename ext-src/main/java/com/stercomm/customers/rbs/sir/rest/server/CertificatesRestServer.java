@@ -95,9 +95,10 @@ public class CertificatesRestServer extends BaseRestServer {
 
 		List<AuthChainMember> chain = new ArrayList<AuthChainMember>();
 		Error e = null;
+		boolean isSystemException = false;
 
 		CertificateValidationResponse resp = new CertificateValidationResponse();
-		byte[] decoded = Base64.getDecoder().decode(certificate.getCertBody());
+		byte[] decoded = Base64.getDecoder().decode(certificate.getCertificateBody());
 		try {
 			// X509Certificate cert = X509Certificate.getInstance(decoded);
 			LinkedList<TrustedCertificateInfo> certList = TrustedCertificateInfo.parseCertificateBlob(decoded);
@@ -126,7 +127,7 @@ public class CertificatesRestServer extends BaseRestServer {
 			resp.setError(e);
 			resp.setValid(false);
 		} catch (IssuerNotFoundException infe) {
-			e=toError("Certificate Auth Chain incomplete. The certificate issuer is not trusted :" + infe.getMessage(), "issuer.notfound");
+			e=toError("Certificate Auth Chain incomplete. The certificate issuer is not trusted :" + infe.getMessage(), "issuer.nottrusted");
 			resp.setError(e);
 			resp.setValid(false);
 		} catch (CertificateExpiredException cee) {
@@ -156,21 +157,24 @@ public class CertificatesRestServer extends BaseRestServer {
 		} catch (CertificateException ce) {
 			e=toError("Error checking the validity of the certificate " + ce.getMessage(), "certificate.generalexception");
 			resp.setError(e);
+			isSystemException=true;
 			resp.setValid(false);
 		} catch (SQLException sqle) {
 			e=toError("Error checking the validity of the certificate " + sqle.getMessage(), "certificate.sqlexception");
 			resp.setError(e);
+			isSystemException=true;
 			resp.setValid(false);
 		} catch (Exception ex) {
 			e=toError("Error checking the validity of the certificate " + ex.getMessage(), "certificate.exception");
 			resp.setError(e);
+			isSystemException=true;
 			resp.setValid(false);
 		}
 		if (e == null && resp.isValid()) {
 			LOGGER.info("No errors, returning chain of size : " + chain.size());
 			return Response.status(Status.OK).entity(resp).build();
 		} else {
-			return Response.status(Status.NOT_FOUND).entity(e).build();
+			return Response.status(isSystemException?Status.INTERNAL_SERVER_ERROR:Status.BAD_REQUEST).entity(e).build();
 		}
 	}
 
@@ -207,7 +211,7 @@ public class CertificatesRestServer extends BaseRestServer {
 	}
 	private void validatePost(Validator val, List<Error> errs, Certificate cert) {
 
-		LOGGER.info("Validating a cert starting with > " + cert.getCertBody().substring(0, 20) + "...");
+		LOGGER.info("Validating a cert starting with > " + cert.getCertificateBody().substring(0, 20) + "...");
 		val.validate(cert).stream().forEach(violation -> {
 
 			String message = violation.getMessage();

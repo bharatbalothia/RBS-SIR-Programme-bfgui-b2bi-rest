@@ -13,16 +13,15 @@ public class Certificate {
 	
 	@NotNull(message = "Field cannot be null")
 	@NotEmpty(message="Field cannot be empty")
-	@XmlElement(name = "certificate-body")
-	private String certBody;
+	private String certificateBody;
 
 	
-	public String getCertBody() {
-		return certBody;
+	public String getCertificateBody() {
+		return certificateBody;
 	}
 
-	public void setCertBody(String certBody) {
-		this.certBody = certBody;
+	public void setCertificateBody(String certBody) {
+		this.certificateBody = certBody;
 	}
 
 	

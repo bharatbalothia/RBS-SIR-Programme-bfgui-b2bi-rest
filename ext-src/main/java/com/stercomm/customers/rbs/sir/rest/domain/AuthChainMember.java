@@ -13,14 +13,14 @@ public class AuthChainMember {
 	private String subjectDN;
 	private String certificateName;
 	
-	@XmlElement(name = "subject-dn")
+
 	public String getSubjectDN() {
 		return subjectDN;
 	}
 	public void setSubjectDN(String subjectDN) {
 		this.subjectDN = subjectDN;
 	}
-	@XmlElement(name = "certificate-name")
+	
 	public String getCertificateName() {
 		return certificateName;
 	}

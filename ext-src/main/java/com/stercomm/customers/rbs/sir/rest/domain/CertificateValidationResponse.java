@@ -41,7 +41,6 @@ public class CertificateValidationResponse {
 		return selfSigned;
 	}
 	
-	@XmlElement(name = "self-signed")
 	public void setSelfSigned(boolean selfSigned) {
 		this.selfSigned = selfSigned;
 	}
