@@ -181,6 +181,22 @@ public class RoutingRulesRestServer extends BaseRestServer {
 	public Response updateSWIFTRulesFromRule(RoutingRule rule) {
 
 		
+		Validator bodyValidator = Validation.buildDefaultValidatorFactory().getValidator();
+
+		// what we return if the post failed to validate
+		final Errors list = new Errors();
+		final List<Error> errs = new ArrayList<Error>();
+		validatePost(bodyValidator, errs, rule);
+
+		// if we have any validation errors, get out right now, and send a 400
+		if (errs.size() > 0) {
+
+			list.setErrors(errs);
+			return Response.status(Status.BAD_REQUEST).entity(errs).build();
+		}
+
+		
+		
 		SRRLogs updateLogs = new SRRLogs();
 
 
