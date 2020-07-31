@@ -23,6 +23,7 @@ import javax.ws.rs.core.UriInfo;
 
 import com.stercomm.customers.rbs.sir.rest.domain.Error;
 import com.stercomm.customers.rbs.sir.rest.domain.FileSearchResult;
+import com.stercomm.customers.rbs.sir.rest.domain.FileSearchResults;
 import com.stercomm.customers.rbs.sir.rest.domain.TransactionSearchResult;
 import com.stercomm.customers.rbs.sir.rest.util.FileSearchResultBuilder;
 import com.stercomm.customers.rbs.sir.rest.util.FileSearchWhereClauseBuilder;
@@ -35,7 +36,6 @@ public class FilesRestServer extends BaseRestServer {
 
 	private static Logger LOGGER = Logger.getLogger(FilesRestServer.class.getName());
 
-	
 
 	@PostConstruct
 	private void init() {
@@ -58,7 +58,7 @@ public class FilesRestServer extends BaseRestServer {
 
 		Connection conn = null;
 		PreparedStatement ps = null;
-		ResultSet rs = null;
+		
 
 		// default num rows to return on each request
 		final List<String> rowsToReturn = new ArrayList<String>();
@@ -79,10 +79,13 @@ public class FilesRestServer extends BaseRestServer {
 		uriInfo.getQueryParameters().remove("start");
 		uriInfo.getQueryParameters().remove("rows");
 
-		// now construct the query
-		StringBuffer query = new StringBuffer();
+		// now construct the queries
+		StringBuffer dataQuery = new StringBuffer();
+		StringBuffer totalQuery = new StringBuffer();
+		
+		totalQuery.append("select count(*) from sct_bundle ");
 
-		query.append(
+		dataQuery.append(
 				"SELECT bundle_id, filename, reference, btimestamp, btype, entity_id, status, error, wf_id, message_id, "
 						+ "isoutbound, isoverride, service, doc_id, "
 						// this next part totals the transactions (PAYMENT AND PAYMENT_ARCHIVE rows for
@@ -93,35 +96,67 @@ public class FilesRestServer extends BaseRestServer {
 						+ "and b2.bundle_id=bun.bundle_id) " + "FROM SCT_BUNDLE bun ");
 
 		// are there any query params, if so create a WHERE?
+		
+		
 		if (uriInfo.getQueryParameters().keySet().size() > 0) {
-			String where = getWhereFromParams(uriInfo.getQueryParameters());
-			query.append(where);
+		 String where = getWhereFromParams(uriInfo.getQueryParameters());
+			dataQuery.append(where);
+			totalQuery.append(where);
+			
 			if (!uriInfo.getQueryParameters().containsKey("outbound")) {
 				// current systems screens not 0 or 1 values, so do we.
-				query.append(" and (isoutbound=0 or isoutbound = 1) ");
+				String s = " and (isoutbound=0 or isoutbound = 1) ";
+				dataQuery.append(s);
+				totalQuery.append(s);
 			}
 		}
 
 		// need to order by something
 		String orderBy = " ORDER BY btimestamp DESC, BUNDLE_ID DESC";
-		query.append(orderBy);
+		dataQuery.append(orderBy);
 
 		// append the pagination we worked out earlier
-		query.append(pagination);
+		dataQuery.append(pagination);
 
-		String fullQuery = query.toString();
-		LOGGER.info("Query : " + fullQuery);
+		String dataQueryAsString = dataQuery.toString();
+		String totalQueryAsString = totalQuery.toString();
+		//to get the total
+		
+		LOGGER.info("Data query:"+ dataQueryAsString);
+		LOGGER.info("Total query:"+ totalQueryAsString);
+		
 
 		// where we put results
-		List<FileSearchResult> results = new ArrayList<FileSearchResult>();
+		
+		FileSearchResults result=new FileSearchResults();
+		
+		ResultSet dataRs=null;
+		ResultSet totalRs=null;
 		try {
 			conn = Conn.getConnection();
-			ps = conn.prepareStatement(fullQuery);
-			rs = ps.executeQuery();
+			ps = conn.prepareStatement(dataQueryAsString);
+			dataRs = ps.executeQuery();
+			List<FileSearchResult> results = new ArrayList<FileSearchResult>();
+			
+			while (dataRs.next()) {
+				FileSearchResult res = toFileSearchResult(dataRs);
+				results.add(res);
+			}
+			
+			//if we had some results add them to the overall obj we are going to return
+			if(!results.isEmpty()) {
+				
+				result.setResults(results);
+			}
+			// now let's get the total
+			ps.close();
+			ps=conn.prepareStatement(totalQueryAsString);			
+			totalRs = ps.executeQuery();
 
-			while (rs.next()) {
-				FileSearchResult result = toFileSearchResult(rs);
-				results.add(result);
+			while (totalRs.next()) {
+				int k = totalRs.getInt(1);
+				LOGGER.info("Result of count : " + k);
+				result.setTotal(k);
 			}
 		}
 
@@ -130,8 +165,11 @@ public class FilesRestServer extends BaseRestServer {
 
 		} finally {
 			try {
-				if (rs != null) {
-					rs.close();
+				if (dataRs != null) {
+					dataRs.close();
+				}
+				if (totalRs != null) {
+					totalRs.close();
 				}
 				if (ps != null) {
 					ps.close();
@@ -144,7 +182,7 @@ public class FilesRestServer extends BaseRestServer {
 			}
 		}
 
-		return Response.status(Status.OK).entity(results).build();
+		return Response.status(Status.OK).entity(result).build();
 	}
 
 	@GET

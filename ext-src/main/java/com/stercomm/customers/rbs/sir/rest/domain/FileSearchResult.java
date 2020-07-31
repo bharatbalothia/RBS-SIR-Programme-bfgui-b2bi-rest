@@ -1,7 +1,5 @@
 package com.stercomm.customers.rbs.sir.rest.domain;
 
-import javax.xml.bind.annotation.XmlRootElement;
-
 /**
  * 
  * A FileSearchResult
@@ -10,7 +8,7 @@ import javax.xml.bind.annotation.XmlRootElement;
  *
  */
 
-@XmlRootElement
+
 public class FileSearchResult {
 
 	public FileSearchResult(int id, String errorCode, int status, String filename, String reference, String timestamp,
