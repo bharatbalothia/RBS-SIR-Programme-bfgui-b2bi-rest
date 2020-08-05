@@ -73,6 +73,32 @@ public class FileSearchWhereClauseBuilder {
 		return this;
 	}
 	
+	public FileSearchWhereClauseBuilder withBPState(String state) {
+		
+		/*
+		 * rbs.sfg.sct.bundle.search.bpState.red= and bun.status < 0 
+		rbs.sfg.sct.bundle.search.bpState.green= and (bun.status=100 or bun.status=200) 
+		rbs.sfg.sct.bundle.search.bpState.amber= and bun.status > 0 and bun.status != 100 and bun.status != 200 
+		 */
+		if ("red".equalsIgnoreCase(state)) {
+			buf.append("status < 0");
+			
+		} else if ("amber".equalsIgnoreCase(state)) {
+			
+			buf.append("status > 0 and status != 100 and status !=200");
+		}
+		else if ("green".equalsIgnoreCase(state)) {
+			buf.append("status = 100 or status = 200");	
+		}
+		else  {
+			buf.append("status is not null");
+			
+		}
+		
+		
+		return this;
+	}
+	
 	public FileSearchWhereClauseBuilder withDocID(String docID) {
 
 		buf.append("doc_id='" + docID + "'");

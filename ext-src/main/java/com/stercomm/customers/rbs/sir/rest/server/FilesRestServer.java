@@ -473,6 +473,19 @@ public class FilesRestServer extends BaseRestServer {
 				builder.and();
 			}
 		}
+		
+		s= qsparams.getFirst("bp-state");
+		
+		
+		if (s != null && s!="") {
+			
+			builder.withBPState(s);
+				
+			numElementsSoFar++;
+			if (numElementsSoFar < numOfParams) {
+				builder.and();
+			}
+		}
 
 		s = qsparams.getFirst("messageid");
 
