@@ -35,7 +35,7 @@ import com.sterlingcommerce.woodstock.util.frame.jdbc.Conn;
 public class FilesRestServer extends BaseRestServer {
 
 	private static Logger LOGGER = Logger.getLogger(FilesRestServer.class.getName());
-
+	private static String poolName=null;
 
 	@PostConstruct
 	private void init() {
@@ -45,6 +45,8 @@ public class FilesRestServer extends BaseRestServer {
 			String logName = Manager.getProperties("bfgui").getProperty("log.path.filesearch.filename");
 			String fullPath = logPath + File.separator + logName;
 			LOGGER = setupLogging(logToConsole, fullPath);
+			
+			poolName=Manager.getProperties("bfgui").getProperty("file-search-pool");
 
 		} catch (Exception ex) {
 			ex.printStackTrace();
@@ -133,7 +135,7 @@ public class FilesRestServer extends BaseRestServer {
 		ResultSet dataRs=null;
 		ResultSet totalRs=null;
 		try {
-			conn = Conn.getConnection();
+			conn = Conn.getConnection(poolName);
 			ps = conn.prepareStatement(dataQueryAsString);
 			dataRs = ps.executeQuery();
 			List<FileSearchResult> results = new ArrayList<FileSearchResult>();
@@ -217,7 +219,7 @@ public class FilesRestServer extends BaseRestServer {
 		LOGGER.info("Query for single bundle/trans (" + bundleid + ","+transID +"): " + fullQuery);
 
 		try {
-			conn = Conn.getConnection();
+			conn = Conn.getConnection(poolName);
 			ps = conn.prepareStatement(fullQuery);
 			ps.setInt(1, Integer.parseInt(transID));
 			ps.setInt(2, Integer.parseInt(bundleid));
@@ -311,7 +313,7 @@ public class FilesRestServer extends BaseRestServer {
 		LOGGER.info("Query : " + fullQuery);
 
 		try {
-			conn = Conn.getConnection();
+			conn = Conn.getConnection(poolName);
 			ps = conn.prepareStatement(fullQuery);
 			ps.setString(1, bundleid);
 			rs = ps.executeQuery();

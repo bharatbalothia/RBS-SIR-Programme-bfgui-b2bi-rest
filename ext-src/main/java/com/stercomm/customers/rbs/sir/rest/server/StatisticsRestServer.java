@@ -30,6 +30,7 @@ import com.sterlingcommerce.woodstock.util.frame.jdbc.Conn;
 public class StatisticsRestServer extends BaseRestServer {
 
 	private static Logger LOGGER = Logger.getLogger(StatisticsRestServer.class.getName());
+	private static String poolName=null;
 
 	private static final String QUERY_SYSTEM_ERRORS = "SELECT ( SELECT COUNT(*) FROM WORKFLOW_CONTEXT WFC_MAIN_1 WHERE ACTIVITYINFO_ID = 0 AND STEP_ID = 0 AND WORKFLOW_ID IN (SELECT WF_ID FROM ARCHIVE_INFO WHERE ARCHIVE_FLAG=-1 ) AND 1=( SELECT MAX( CASE WHEN BASIC_STATUS = 1 THEN 1 WHEN BASIC_STATUS = 10001 THEN 1 WHEN BASIC_STATUS = 200 THEN 1 "
 			+ "WHEN BASIC_STATUS = 10200 THEN 1 WHEN BASIC_STATUS = 100 THEN 1 WHEN BASIC_STATUS = 10100 THEN 1 WHEN "
@@ -82,6 +83,8 @@ public class StatisticsRestServer extends BaseRestServer {
 			String logName = Manager.getProperties("bfgui").getProperty("log.path.statistics.filename");
 			String fullPath = logPath + File.separator + logName;
 			LOGGER = setupLogging(logToConsole, fullPath);
+			
+			poolName=Manager.getProperties("bfgui").getProperty("file-search-pool");
 
 		} catch (Exception ex) {
 			ex.printStackTrace();
@@ -116,7 +119,7 @@ public class StatisticsRestServer extends BaseRestServer {
 		StatsSearchResult result = new StatsSearchResult(0, StatsResultType.FATAL_ERROR);
 
 		try {
-			conn = Conn.getConnection();
+			conn = Conn.getConnection(poolName);
 			ps = conn.prepareStatement(QUERY_SYSTEM_ERRORS);
 			rs = ps.executeQuery();
 
@@ -168,7 +171,7 @@ public class StatisticsRestServer extends BaseRestServer {
 		for (StatsResultType type : sctStatsQueryMap.keySet()) {
 
 			try {
-				conn = Conn.getConnection();
+				conn = Conn.getConnection(poolName);
 				ps = conn.prepareStatement(sctStatsQueryMap.get(type));
 				rs = ps.executeQuery();
 
@@ -220,7 +223,7 @@ public class StatisticsRestServer extends BaseRestServer {
 		for (StatsResultType type : sctAlertsQueryMap.keySet()) {
 
 			try {
-				conn = Conn.getConnection();
+				conn = Conn.getConnection(poolName);
 				ps = conn.prepareStatement(sctAlertsQueryMap.get(type));
 				rs = ps.executeQuery();
 

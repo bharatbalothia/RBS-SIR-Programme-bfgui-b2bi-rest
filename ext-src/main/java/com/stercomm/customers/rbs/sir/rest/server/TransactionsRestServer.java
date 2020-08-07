@@ -30,6 +30,7 @@ import com.sterlingcommerce.woodstock.util.frame.jdbc.Conn;
 public class TransactionsRestServer extends BaseRestServer {
 	
 	private static Logger LOGGER = Logger.getLogger(TransactionsRestServer.class.getName());
+	private static String poolName=null;
 	
 	@PostConstruct
 	private void init() {
@@ -39,6 +40,8 @@ public class TransactionsRestServer extends BaseRestServer {
 			String logName = Manager.getProperties("bfgui").getProperty("log.path.transactions.filename");
 			String fullPath = logPath + File.separator + logName;
 			LOGGER = setupLogging(logToConsole, fullPath);
+			
+			poolName=Manager.getProperties("bfgui").getProperty("file-search-pool");
 
 		} catch (Exception ex) {
 			ex.printStackTrace();
@@ -101,7 +104,7 @@ public class TransactionsRestServer extends BaseRestServer {
 		// where we put results
 		List<TransactionSearchResult> results = new ArrayList<TransactionSearchResult>();
 		try {
-			conn = Conn.getConnection();
+			conn = Conn.getConnection(poolName);
 			ps = conn.prepareStatement(fullQuery);
 			rs = ps.executeQuery();
 
