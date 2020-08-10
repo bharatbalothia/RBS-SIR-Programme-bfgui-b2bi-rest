@@ -30,12 +30,13 @@ import com.stercomm.customers.rbs.sir.rest.util.FileSearchWhereClauseBuilder;
 import com.stercomm.customers.rbs.sir.rest.util.TransactionResultType;
 import com.sterlingcommerce.woodstock.util.frame.Manager;
 import com.sterlingcommerce.woodstock.util.frame.jdbc.Conn;
+import com.sterlingcommerce.woodstock.util.frame.jdbc.JDBCService;
 
 @Path("/files")
 public class FilesRestServer extends BaseRestServer {
 
 	private static Logger LOGGER = Logger.getLogger(FilesRestServer.class.getName());
-	private static String poolName=null;
+
 
 	@PostConstruct
 	private void init() {
@@ -46,7 +47,7 @@ public class FilesRestServer extends BaseRestServer {
 			String fullPath = logPath + File.separator + logName;
 			LOGGER = setupLogging(logToConsole, fullPath);
 			
-			poolName=Manager.getProperties("bfgui").getProperty("file-search-pool");
+			
 
 		} catch (Exception ex) {
 			ex.printStackTrace();
@@ -57,6 +58,12 @@ public class FilesRestServer extends BaseRestServer {
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
 	public Response doSearchForFiles(@Context UriInfo uriInfo) {
+		
+	
+		
+		String poolName=Manager.getProperties("bfgui").getProperty("file.search.pool");
+		
+		LOGGER.info("Pool name : " + poolName);
 
 		Connection conn = null;
 		PreparedStatement ps = null;
@@ -135,7 +142,12 @@ public class FilesRestServer extends BaseRestServer {
 		ResultSet dataRs=null;
 		ResultSet totalRs=null;
 		try {
-			conn = Conn.getConnection(poolName);
+			 if (null==poolName) {
+				 conn = Conn.getConnection();
+			 }
+			 else {
+				 conn = JDBCService.getConnection(poolName);
+			 }
 			ps = conn.prepareStatement(dataQueryAsString);
 			dataRs = ps.executeQuery();
 			List<FileSearchResult> results = new ArrayList<FileSearchResult>();
@@ -195,10 +207,31 @@ public class FilesRestServer extends BaseRestServer {
 		Connection conn = null;
 		PreparedStatement ps = null;
 		ResultSet rs = null;
+		
+		String poolName=Manager.getProperties("bfgui").getProperty("files.search.pool");
 
 		boolean is404 = false;
 
 		TransactionSearchResult result = null;
+		
+		final List<String> rowsToReturn = new ArrayList<String>();
+		rowsToReturn.add("10");
+
+		// unless a param is specified, we start from 1 each time
+		final List<String> offset = new ArrayList<String>();
+		offset.add("0");
+
+		// add those if they arent there ...
+		uriInfo.getQueryParameters().putIfAbsent("start", offset);
+		uriInfo.getQueryParameters().putIfAbsent("rows", rowsToReturn);
+
+		// create the pagination string...
+		String pagination = getPaginationString(uriInfo.getQueryParameters());
+
+		// now remove the pagination params so we don't try to use them in the WHERE
+		uriInfo.getQueryParameters().remove("start");
+		uriInfo.getQueryParameters().remove("rows");
+
 
 		// now construct the query
 		StringBuffer query = new StringBuffer();
@@ -215,11 +248,19 @@ public class FilesRestServer extends BaseRestServer {
 				+ "FROM SCT_PAYMENT p, SCT_BUNDLE b, SCT_ENTITY e "
 				+ "where p.payment_id = ? and b.bundle_id = ? and p.bundle_id = b.bundle_id and e.entity_id = b.entity_id ");
 
+		
+		// append the pagination we worked out earlier
+		query.append(pagination);
 		String fullQuery = query.toString();
 		LOGGER.info("Query for single bundle/trans (" + bundleid + ","+transID +"): " + fullQuery);
 
 		try {
-			conn = Conn.getConnection(poolName);
+			 if (null==poolName) {
+				 conn = Conn.getConnection();
+			 }
+			 else {
+				 conn = JDBCService.getConnection(poolName);
+			 }
 			ps = conn.prepareStatement(fullQuery);
 			ps.setInt(1, Integer.parseInt(transID));
 			ps.setInt(2, Integer.parseInt(bundleid));
@@ -279,6 +320,8 @@ public class FilesRestServer extends BaseRestServer {
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 
+		
+		String poolName=Manager.getProperties("bfgui").getProperty("file.search.pool");
 		// default num rows to return on each request
 		final List<String> rowsToReturn = new ArrayList<String>();
 		rowsToReturn.add("10");
@@ -313,7 +356,12 @@ public class FilesRestServer extends BaseRestServer {
 		LOGGER.info("Query : " + fullQuery);
 
 		try {
-			conn = Conn.getConnection(poolName);
+			 if (null==poolName) {
+				 conn = Conn.getConnection();
+			 }
+			 else {
+				 conn = JDBCService.getConnection(poolName);
+			 }
 			ps = conn.prepareStatement(fullQuery);
 			ps.setString(1, bundleid);
 			rs = ps.executeQuery();
@@ -415,6 +463,18 @@ public class FilesRestServer extends BaseRestServer {
 				builder.and();
 			}
 		}
+		
+		s = qsparams.getFirst("id");
+
+		if (s != null) {
+			int k=Integer.parseInt(s);
+			builder.withBundleID(k);
+			numElementsSoFar++;
+			if (numElementsSoFar < numOfParams) {
+				builder.and();
+			}
+		}
+
 
 		s = qsparams.getFirst("service");
 

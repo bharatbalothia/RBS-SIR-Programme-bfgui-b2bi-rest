@@ -104,7 +104,8 @@ public class TransactionsRestServer extends BaseRestServer {
 		// where we put results
 		List<TransactionSearchResult> results = new ArrayList<TransactionSearchResult>();
 		try {
-			conn = Conn.getConnection(poolName);
+//			conn = Conn.getConnection(poolName);
+					conn = Conn.getConnection();
 			ps = conn.prepareStatement(fullQuery);
 			rs = ps.executeQuery();
 

@@ -40,6 +40,12 @@ public class FileSearchWhereClauseBuilder {
 		buf.append("isoutbound=" + (isOutbound?"1":"0"));
 		return this;
 	}
+	
+	public FileSearchWhereClauseBuilder withBundleID( int id) {
+
+		buf.append("bundle_id=" + id);
+		return this;
+	}
 
 	public FileSearchWhereClauseBuilder withMessageID(long messageID) {
 
