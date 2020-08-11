@@ -25,6 +25,7 @@ import com.stercomm.customers.rbs.sir.rest.domain.Error;
 import com.stercomm.customers.rbs.sir.rest.domain.FileSearchResult;
 import com.stercomm.customers.rbs.sir.rest.domain.FileSearchResults;
 import com.stercomm.customers.rbs.sir.rest.domain.TransactionSearchResult;
+import com.stercomm.customers.rbs.sir.rest.domain.TransactionSearchResults;
 import com.stercomm.customers.rbs.sir.rest.util.FileSearchResultBuilder;
 import com.stercomm.customers.rbs.sir.rest.util.FileSearchWhereClauseBuilder;
 import com.stercomm.customers.rbs.sir.rest.util.TransactionResultType;
@@ -319,6 +320,7 @@ public class FilesRestServer extends BaseRestServer {
 		Connection conn = null;
 		PreparedStatement ps = null;
 		ResultSet rs = null;
+		ResultSet totalRs = null;
 
 		
 		String poolName=Manager.getProperties("bfgui").getProperty("file.search.pool");
@@ -342,19 +344,26 @@ public class FilesRestServer extends BaseRestServer {
 		uriInfo.getQueryParameters().remove("rows");
 
 		// now construct the query
-		StringBuffer query = new StringBuffer();
-		query.append("SELECT payment_id, transaction_id, settle_date, settle_amt, type,  "
+		StringBuffer dataQuery = new StringBuffer();
+		dataQuery.append("SELECT payment_id, transaction_id, settle_date, settle_amt, type,  "
 				+ "status, wf_id, bundle_id from (select * from SCT_PAYMENT UNION select * from SCT_PAYMENT_ARCHIVE) "
 				+ "WHERE BUNDLE_ID = ? ORDER BY PAYMENT_ID DESC ");
 
 		// append the pagination we worked out earlier
-		query.append(pagination);
+		dataQuery.append(pagination);
 		// where we put results
-		List<TransactionSearchResult> results = new ArrayList<TransactionSearchResult>();
+		TransactionSearchResults results = new TransactionSearchResults();
 
-		String fullQuery = query.toString();
+		String fullQuery = dataQuery.toString();
 		LOGGER.info("Query : " + fullQuery);
+		
+		// and for the total
+		StringBuffer totalQuery = new StringBuffer();
+		totalQuery.append("select count(*) from ");
+		totalQuery.append("(select * from SCT_PAYMENT UNION select * from SCT_PAYMENT_ARCHIVE) ");
+		totalQuery.append("WHERE BUNDLE_ID = ?");
 
+		List<TransactionSearchResult> list=new ArrayList<TransactionSearchResult>();
 		try {
 			 if (null==poolName) {
 				 conn = Conn.getConnection();
@@ -368,8 +377,22 @@ public class FilesRestServer extends BaseRestServer {
 
 			while (rs.next()) {
 				TransactionSearchResult result = toTransactionSearchResult(rs, TransactionResultType.SUMMARY);
-				results.add(result);
+				list.add(result);
 			}
+			results.setResults(list);
+			// now let's get the total
+			ps.close();
+			ps=conn.prepareStatement(totalQuery.toString());		
+			ps.setString(1, bundleid);
+			totalRs = ps.executeQuery();
+
+			while (totalRs.next()) {
+					int k = totalRs.getInt(1);
+					LOGGER.info("Result of count : " + k);
+					results.setTotal(k);
+			}
+			
+			
 		}
 
 		catch (Exception e) {
