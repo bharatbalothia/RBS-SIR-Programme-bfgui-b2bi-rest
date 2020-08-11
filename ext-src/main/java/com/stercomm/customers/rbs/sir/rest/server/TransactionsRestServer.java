@@ -21,6 +21,7 @@ import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
 
 import com.stercomm.customers.rbs.sir.rest.domain.TransactionSearchResult;
+import com.stercomm.customers.rbs.sir.rest.domain.TransactionSearchResults;
 import com.stercomm.customers.rbs.sir.rest.util.TransactionResultType;
 import com.stercomm.customers.rbs.sir.rest.util.TransactionSearchWhereClauseBuilder;
 import com.sterlingcommerce.woodstock.util.frame.Manager;
@@ -56,6 +57,7 @@ public class TransactionsRestServer extends BaseRestServer {
 		Connection conn = null;
 		PreparedStatement ps = null;
 		ResultSet rs = null;
+		ResultSet totalRs=null;
 
 		// default num rows to return on each request
 		final List<String> rowsToReturn = new ArrayList<String>();
@@ -78,17 +80,25 @@ public class TransactionsRestServer extends BaseRestServer {
 
 		// now construct the query
 		StringBuffer query = new StringBuffer();
+		StringBuffer totalQuery = new StringBuffer();
+		
 
 		query.append(
 				"select p.payment_id, p.transaction_id,p.settle_date,p.settle_amt,p.type,p.status,p.wf_id, p.bundle_id ");
-		query.append("from (select * from sct_payment UNION select * from sct_payment_archive) p, sct_entity e, sct_bundle b ");
-		query.append("where b.bundle_id=p.bundle_id and e.entity_id = b.entity_id ");
+		totalQuery.append("select count(*) ");
+		String s = "from (select * from sct_payment UNION select * from sct_payment_archive) p, sct_entity e, sct_bundle b ";
+		query.append(s);
+		totalQuery.append(s);
+		s="where b.bundle_id=p.bundle_id and e.entity_id = b.entity_id ";
+		query.append(s);
+		totalQuery.append(s);
 
 		// are there any query params, if so create a WHERE?
 		if (uriInfo.getQueryParameters().keySet().size() > 0) {
 			String where = getWhereFromParams(uriInfo.getQueryParameters());
 			query.append(" and ");
 			query.append(where);
+			totalQuery.append(where);
 		}
 
 		// need to order by something
@@ -102,7 +112,8 @@ public class TransactionsRestServer extends BaseRestServer {
 		LOGGER.info("Query : " + fullQuery);
 
 		// where we put results
-		List<TransactionSearchResult> results = new ArrayList<TransactionSearchResult>();
+		List<TransactionSearchResult> list = new ArrayList<TransactionSearchResult>();
+		TransactionSearchResults results = new TransactionSearchResults();
 		try {
 //			conn = Conn.getConnection(poolName);
 					conn = Conn.getConnection();
@@ -111,8 +122,23 @@ public class TransactionsRestServer extends BaseRestServer {
 
 			while (rs.next()) {
 				TransactionSearchResult result = toTransactionSearchResult(rs, TransactionResultType.SUMMARY);
-				results.add(result);
+				list.add(result);
 			}
+			results.setResults(list);
+			
+			// now get the total
+			
+			ps.close();
+			ps=conn.prepareStatement(totalQuery.toString());		
+		
+			totalRs = ps.executeQuery();
+
+			while (totalRs.next()) {
+					int k = totalRs.getInt(1);
+					LOGGER.info("Result of count : " + k);
+					results.setTotal(k);
+			}
+			
 			
 		}
 
