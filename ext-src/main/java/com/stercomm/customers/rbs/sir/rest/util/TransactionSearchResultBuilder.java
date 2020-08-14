@@ -29,6 +29,9 @@ public class TransactionSearchResultBuilder {
 	private TransactionResultType rowType;
 	private String filename;
 	private String fileID;
+	private String service;
+	private String timestamp;
+	
 	
 
 	public TransactionSearchResultBuilder(int id, TransactionResultType type) {
@@ -45,11 +48,19 @@ public class TransactionSearchResultBuilder {
 		}
 		else {
 			
-			return new TransactionSearchResult(paymentID, status, transactionID, type, workflowID, settleDate, settleAmount, fileID, isoutbound, ref, filename, paymentBIC, entity);
+			return new TransactionSearchResult(paymentID, status, transactionID, type, workflowID, settleDate, settleAmount, fileID, isoutbound, ref, filename, paymentBIC, entity, service, timestamp);
 		}
 	}
 	 
 
+	public TransactionSearchResultBuilder withTimestamp(String ts) {
+
+		this.timestamp = ts;
+
+		return this;
+	}
+	
+	
 
 	public TransactionSearchResultBuilder withWorkflowID(int workflowID) {
 
@@ -73,6 +84,12 @@ public class TransactionSearchResultBuilder {
 		return this;
 	}
 	
+	public TransactionSearchResultBuilder withService(String _service) {
+
+		this.service = noNull(_service);
+
+		return this;
+	}
 
 	public TransactionSearchResultBuilder withType(String type) {
 

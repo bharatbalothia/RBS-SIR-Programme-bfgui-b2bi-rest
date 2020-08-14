@@ -245,7 +245,7 @@ public class FilesRestServer extends BaseRestServer {
 
 		query.append(
 				"select p.payment_id, p.TRANSACTION_ID, p.SETTLE_DATE, p.SETTLE_AMT,  p.type, "
-				+ "p.status,p.wf_id, p.bundle_id, p.payment_bic, e.entity, b.filename, p.reference, p.isoutbound "
+				+ "p.status,p.wf_id, p.bundle_id, p.payment_bic, e.entity, b.filename, p.reference, p.isoutbound, e.service, p.ptimestamp "
 				+ "FROM SCT_PAYMENT p, SCT_BUNDLE b, SCT_ENTITY e "
 				+ "where p.payment_id = ? and b.bundle_id = ? and p.bundle_id = b.bundle_id and e.entity_id = b.entity_id ");
 

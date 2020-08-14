@@ -57,7 +57,7 @@ public class BaseRestServer {
 
 		int paymentID;
 		String transactionID=null;
-		long ts;
+		long settleDate;
 		double settleAmt;
 		String type=null;
 		int wfid;
@@ -70,13 +70,17 @@ public class BaseRestServer {
 		String filename=null;
 		String ref=null;
 		int ob = 0;
+		String service=null;
+		long timestamp;
+		String formattedTimestamp=null;
+		
 		
 		// p.payment_id, p.TRANSACTION_ID, p.SETTLE_DATE, p.SETTLE_AMT, 
 		// p.type, p.status,p.wf_id, p.payment_bic, e.entity, b.filename, p.reference, p.isoutbound
 		
 		 paymentID = row.getInt(1);
 		 transactionID = row.getString(2);
-		 ts = row.getTimestamp(3).getTime();
+		 settleDate = row.getTimestamp(3).getTime();
 		 settleAmt = row.getDouble(4);
 		 type = row.getString(5);
 		 wfid = row.getInt(7);
@@ -89,9 +93,14 @@ public class BaseRestServer {
 			 filename = row.getString(11);
 			 ref = row.getString(12);
 			 ob = row.getInt(13);
+			 service=row.getString(14);
+			 timestamp=row.getTimestamp(15).getTime();
+			 formattedTimestamp = df.format(new java.util.Date(timestamp));
 		}
 		
-		String formattedSettleDate = df.format(new java.util.Date(ts));
+		String formattedSettleDate = df.format(new java.util.Date(settleDate));
+		
+	
 
 		TransactionSearchResult result = null;
 
@@ -105,7 +114,7 @@ public class BaseRestServer {
 			result = new TransactionSearchResultBuilder(paymentID, resultType).withTransactionID(transactionID)
 					.withSettleAmount(settleAmt).withSettleDate(formattedSettleDate).withType(type).withStatus(status)
 					.withWorkflowID(wfid).withEntity(entity).withPaymentBIC(bic).withFilename(filename)
-					.withReference(ref).withIsoutbound(ob == 1 ? true : false).withFileID(fileID).build();
+					.withReference(ref).withIsoutbound(ob == 1 ? true : false).withFileID(fileID).withService(service).withTimestamp(formattedTimestamp).build();
 		}
 		return result;
 

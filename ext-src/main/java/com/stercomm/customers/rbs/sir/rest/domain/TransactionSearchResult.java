@@ -30,8 +30,36 @@ public class TransactionSearchResult {
 	private String reference;
 	private Boolean isoutbound;  
 	private String fileID;
+	private String service;
+	private String timestamp;
 
 
+	
+
+	@Override
+	public String toString() {
+		return "TransactionSearchResult [id=" + id + ", status=" + status + ", transactionID=" + transactionID
+				+ ", type=" + type + ", settleDate=" + settleDate + ", settleAmount=" + settleAmount + ", workflowID="
+				+ workflowID + ", entity=" + entity + ", paymentBIC=" + paymentBIC + ", filename=" + filename
+				+ ", reference=" + reference + ", isoutbound=" + isoutbound + ", fileID=" + fileID + ", service="
+				+ service + ", timestamp=" + timestamp + "]";
+	}
+
+	public String getTimestamp() {
+		return timestamp;
+	}
+
+	public void setTimestamp(String timestamp) {
+		this.timestamp = timestamp;
+	}
+
+	public String getService() {
+		return service;
+	}
+
+	public void setService(String service) {
+		this.service = service;
+	}
 
 	public String getFileID() {
 		return fileID;
@@ -55,7 +83,7 @@ public class TransactionSearchResult {
 	}
 
 	public TransactionSearchResult(int id, int status, String transactionID, String type,
-			  int workflowID, String settleDate, double settleAmount, String fileID, boolean isoutbound, String ref, String filename, String paymentBIC, String entity) {
+			  int workflowID, String settleDate, double settleAmount, String fileID, boolean isoutbound, String ref, String filename, String paymentBIC, String entity, String service, String timestamp) {
 			
 		this(id, status, transactionID, type, workflowID, settleDate, settleAmount, fileID);
 		this.isoutbound = isoutbound;
@@ -63,6 +91,8 @@ public class TransactionSearchResult {
 		this.filename=filename;
 		this.paymentBIC=paymentBIC;
 		this.entity = entity;
+		this.service=service;
+		this.timestamp=timestamp;
 		
 	}
 	
@@ -149,13 +179,7 @@ public class TransactionSearchResult {
 
 
 
-	@Override
-	public String toString() {
-		return "TransactionSearchResult [id=" + id + ", status=" + status + ", transactionID=" + transactionID
-				+ ", type=" + type + ", settleDate=" + settleDate + ", settleAmount="
-				+ settleAmount + ", workflowID=" + workflowID + "]";
-	}
-
+	
 
 
 
