@@ -209,7 +209,7 @@ public class FilesRestServer extends BaseRestServer {
 		PreparedStatement ps = null;
 		ResultSet rs = null;
 		
-		String poolName=Manager.getProperties("bfgui").getProperty("files.search.pool");
+		String poolName=Manager.getProperties("bfgui").getProperty("file.search.pool");
 
 		boolean is404 = false;
 
@@ -253,7 +253,7 @@ public class FilesRestServer extends BaseRestServer {
 		// append the pagination we worked out earlier
 		query.append(pagination);
 		String fullQuery = query.toString();
-		LOGGER.info("Query for single bundle/trans (" + bundleid + ","+transID +"): " + fullQuery);
+		LOGGER.info("Query on pool "+ poolName + " for single bundle/trans (" + bundleid + ","+transID +"): " + fullQuery);
 
 		try {
 			 if (null==poolName) {
@@ -262,9 +262,11 @@ public class FilesRestServer extends BaseRestServer {
 			 else {
 				 conn = JDBCService.getConnection(poolName);
 			 }
+			 
 			ps = conn.prepareStatement(fullQuery);
 			ps.setInt(1, Integer.parseInt(transID));
 			ps.setInt(2, Integer.parseInt(bundleid));
+			
 			rs = ps.executeQuery();		
 			
 			if (rs.next()) {
