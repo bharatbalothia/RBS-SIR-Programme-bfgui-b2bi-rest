@@ -31,6 +31,7 @@ public class TransactionSearchResultBuilder {
 	private String fileID;
 	private String service;
 	private String timestamp;
+	private String docID;
 	
 	
 
@@ -44,11 +45,11 @@ public class TransactionSearchResultBuilder {
 
 		if (rowType == TransactionResultType.SUMMARY) {
 		
-			return new TransactionSearchResult(paymentID, status, transactionID, type, workflowID, settleDate, settleAmount, fileID);
+			return new TransactionSearchResult(paymentID, status, transactionID, type, workflowID, settleDate, settleAmount, fileID, docID);
 		}
 		else {
 			
-			return new TransactionSearchResult(paymentID, status, transactionID, type, workflowID, settleDate, settleAmount, fileID, isoutbound, ref, filename, paymentBIC, entity, service, timestamp);
+			return new TransactionSearchResult(paymentID, status, transactionID, type, workflowID, settleDate, settleAmount, fileID, isoutbound, ref, filename, paymentBIC, entity, service, timestamp, docID);
 		}
 	}
 	 
@@ -126,6 +127,12 @@ public class TransactionSearchResultBuilder {
 	public TransactionSearchResultBuilder withPaymentID(int pid) {
 
 		this.paymentID = pid;
+
+		return this;
+	}
+	public TransactionSearchResultBuilder withDocID(String did) {
+
+		this.docID = did;
 
 		return this;
 	}

@@ -245,7 +245,7 @@ public class FilesRestServer extends BaseRestServer {
 
 		query.append(
 				"select p.payment_id, p.TRANSACTION_ID, p.SETTLE_DATE, p.SETTLE_AMT,  p.type, "
-				+ "p.status,p.wf_id, p.bundle_id, p.payment_bic, e.entity, b.filename, p.reference, p.isoutbound, e.service, p.ptimestamp "
+				+ "p.wf_id, p.status, p.bundle_id, p.doc_id, p.payment_bic, e.entity, b.filename,  p.reference, p.isoutbound, e.service, p.ptimestamp "
 				+ "FROM SCT_PAYMENT p, SCT_BUNDLE b, SCT_ENTITY e "
 				+ "where p.payment_id = ? and b.bundle_id = ? and p.bundle_id = b.bundle_id and e.entity_id = b.entity_id ");
 
@@ -348,7 +348,7 @@ public class FilesRestServer extends BaseRestServer {
 		// now construct the query
 		StringBuffer dataQuery = new StringBuffer();
 		dataQuery.append("SELECT payment_id, transaction_id, settle_date, settle_amt, type,  "
-				+ "status, wf_id, bundle_id from (select * from SCT_PAYMENT UNION select * from SCT_PAYMENT_ARCHIVE) "
+				+ "status, wf_id, bundle_id, doc_id from (select * from SCT_PAYMENT UNION select * from SCT_PAYMENT_ARCHIVE) "
 				+ "WHERE BUNDLE_ID = ? ORDER BY PAYMENT_ID DESC ");
 
 		// append the pagination we worked out earlier

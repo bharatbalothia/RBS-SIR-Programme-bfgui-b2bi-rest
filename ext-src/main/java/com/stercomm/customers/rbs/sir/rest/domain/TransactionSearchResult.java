@@ -29,22 +29,38 @@ public class TransactionSearchResult {
 	private String filename;
 	private String reference;
 	private Boolean isoutbound;  
+	
+
+
 	private String fileID;
 	private String service;
 	private String timestamp;
+	private String docID;
 
 
 	
 
+	
+
+	
 	@Override
 	public String toString() {
 		return "TransactionSearchResult [id=" + id + ", status=" + status + ", transactionID=" + transactionID
 				+ ", type=" + type + ", settleDate=" + settleDate + ", settleAmount=" + settleAmount + ", workflowID="
 				+ workflowID + ", entity=" + entity + ", paymentBIC=" + paymentBIC + ", filename=" + filename
 				+ ", reference=" + reference + ", isoutbound=" + isoutbound + ", fileID=" + fileID + ", service="
-				+ service + ", timestamp=" + timestamp + "]";
+				+ service + ", timestamp=" + timestamp + ", docID=" + docID + "]";
 	}
 
+	public String getDocID() {
+		return docID;
+	}
+
+	public void setDocID(String docID) {
+		this.docID = docID;
+	}
+
+	@JsonSerialize(include = Inclusion.NON_NULL)
 	public String getTimestamp() {
 		return timestamp;
 	}
@@ -52,7 +68,8 @@ public class TransactionSearchResult {
 	public void setTimestamp(String timestamp) {
 		this.timestamp = timestamp;
 	}
-
+	
+	@JsonSerialize(include = Inclusion.NON_NULL)
 	public String getService() {
 		return service;
 	}
@@ -70,7 +87,7 @@ public class TransactionSearchResult {
 	}
 
 	public TransactionSearchResult(int id, int status, String transactionID, String type,
-			  int workflowID, String settleDate, double settleAmount, String fileID) {
+			  int workflowID, String settleDate, double settleAmount, String fileID, String docID) {
 			
 		this.id = id;
 		this.status = status;	
@@ -80,12 +97,13 @@ public class TransactionSearchResult {
 		this.workflowID = workflowID;
 		this.type = type;
 		this.fileID=fileID;
+		this.docID=docID;
 	}
 
 	public TransactionSearchResult(int id, int status, String transactionID, String type,
-			  int workflowID, String settleDate, double settleAmount, String fileID, boolean isoutbound, String ref, String filename, String paymentBIC, String entity, String service, String timestamp) {
+			  int workflowID, String settleDate, double settleAmount, String fileID, boolean isoutbound, String ref, String filename, String paymentBIC, String entity, String service, String timestamp, String docID) {
 			
-		this(id, status, transactionID, type, workflowID, settleDate, settleAmount, fileID);
+		this(id, status, transactionID, type, workflowID, settleDate, settleAmount, fileID, docID);
 		this.isoutbound = isoutbound;
 		this.reference  = ref;	
 		this.filename=filename;

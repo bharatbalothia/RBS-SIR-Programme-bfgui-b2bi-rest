@@ -73,6 +73,7 @@ public class BaseRestServer {
 		String service=null;
 		long timestamp;
 		String formattedTimestamp=null;
+		String docID;
 		
 		
 		// p.payment_id, p.TRANSACTION_ID, p.SETTLE_DATE, p.SETTLE_AMT, 
@@ -86,15 +87,16 @@ public class BaseRestServer {
 		 wfid = row.getInt(7);
 		 status = row.getInt(6);
 		 fileID=row.getString(8);
+		 docID=row.getString(9);
 		 
 		if (resultType == TransactionResultType.DETAIL) {
-			 bic = row.getString(9);
-			 entity = row.getString(10);
-			 filename = row.getString(11);
-			 ref = row.getString(12);
-			 ob = row.getInt(13);
-			 service=row.getString(14);
-			 timestamp=row.getTimestamp(15).getTime();
+			 bic = row.getString(10);
+			 entity = row.getString(11);
+			 filename = row.getString(12);
+			 ref = row.getString(13);
+			 ob = row.getInt(14);
+			 service=row.getString(15);
+			 timestamp=row.getTimestamp(16).getTime();
 			 formattedTimestamp = df.format(new java.util.Date(timestamp));
 		}
 		
@@ -108,13 +110,13 @@ public class BaseRestServer {
 
 			result = new TransactionSearchResultBuilder(paymentID, resultType).withTransactionID(transactionID)
 					.withSettleAmount(settleAmt).withSettleDate(formattedSettleDate).withType(type).withStatus(status)
-					.withWorkflowID(wfid).withFileID(fileID).build();
+					.withWorkflowID(wfid).withFileID(fileID).withDocID(docID).build();
 		} else if (resultType == TransactionResultType.DETAIL) {
 
 			result = new TransactionSearchResultBuilder(paymentID, resultType).withTransactionID(transactionID)
 					.withSettleAmount(settleAmt).withSettleDate(formattedSettleDate).withType(type).withStatus(status)
 					.withWorkflowID(wfid).withEntity(entity).withPaymentBIC(bic).withFilename(filename)
-					.withReference(ref).withIsoutbound(ob == 1 ? true : false).withFileID(fileID).withService(service).withTimestamp(formattedTimestamp).build();
+					.withReference(ref).withIsoutbound(ob == 1 ? true : false).withFileID(fileID).withService(service).withTimestamp(formattedTimestamp).withDocID(docID).build();
 		}
 		return result;
 
