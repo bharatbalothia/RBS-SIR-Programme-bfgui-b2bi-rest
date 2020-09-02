@@ -56,13 +56,13 @@ public class FileSearchWhereClauseBuilder {
 	public FileSearchWhereClauseBuilder before(String before) {
 		
 		
-		buf.append("btimestamp<to_timestamp('" + before + "','yyyy-MM-dd\"T\"HH24:mi:ss')");
+		buf.append("btimestamp<=to_timestamp('" + before + "','yyyy-MM-dd\"T\"HH24:mi:ss')");
 		return this;
 	}
 	
 	public FileSearchWhereClauseBuilder after(String after) { 
 
-		buf.append("btimestamp>to_timestamp('" + after + "','yyyy-MM-dd\"T\"HH24:mi:ss')");
+		buf.append("btimestamp>=to_timestamp('" + after + "','yyyy-MM-dd\"T\"HH24:mi:ss')");
 		return this;
 	}
 
@@ -87,17 +87,17 @@ public class FileSearchWhereClauseBuilder {
 		rbs.sfg.sct.bundle.search.bpState.amber= and bun.status > 0 and bun.status != 100 and bun.status != 200 
 		 */
 		if ("red".equalsIgnoreCase(state)) {
-			buf.append("status < 0");
+			buf.append("(status < 0)");
 			
 		} else if ("amber".equalsIgnoreCase(state)) {
 			
-			buf.append("status > 0 and status != 100 and status !=200");
+			buf.append("(status > 0 and status != 100 and status !=200)");
 		}
 		else if ("green".equalsIgnoreCase(state)) {
-			buf.append("status = 100 or status = 200");	
+			buf.append("(status = 100 or status = 200)");	
 		}
 		else  {
-			buf.append("status is not null");
+			buf.append("(status is not null)");
 			
 		}
 		

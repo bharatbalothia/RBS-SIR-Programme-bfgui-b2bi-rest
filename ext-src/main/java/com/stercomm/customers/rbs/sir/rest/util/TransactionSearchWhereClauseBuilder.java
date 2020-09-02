@@ -35,13 +35,13 @@ public class TransactionSearchWhereClauseBuilder {
 	public TransactionSearchWhereClauseBuilder withSettlementBefore(String before) {
 		
 		
-		buf.append("p.SETTLE_DATE<to_timestamp('" + before + "','yyyy-MM-dd\"T\"HH24:mi:ss')");
+		buf.append("p.SETTLE_DATE<=to_timestamp('" + before + "','yyyy-MM-dd\"T\"HH24:mi:ss')");
 		return this;
 	}
 	
 	public TransactionSearchWhereClauseBuilder withSettlementAfter(String after) { 
 
-		buf.append("p.SETTLE_DATE>to_timestamp('" + after + "','yyyy-MM-dd\"T\"HH24:mi:ss')");
+		buf.append("p.SETTLE_DATE>=to_timestamp('" + after + "','yyyy-MM-dd\"T\"HH24:mi:ss')");
 		return this;
 	}
 

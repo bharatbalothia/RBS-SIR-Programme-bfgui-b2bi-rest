@@ -84,7 +84,7 @@ public class TransactionsRestServer extends BaseRestServer {
 		
 
 		query.append(
-				"select p.payment_id, p.transaction_id,p.settle_date,p.settle_amt,p.type,p.status,p.wf_id, p.bundle_id, p.doc_id ");
+				"select p.payment_id, p.transaction_id,p.settle_date,p.settle_amt,p.type,p.wf_id,p.status, p.bundle_id, p.doc_id ");
 		totalQuery.append("select count(*) ");
 		String s = "from (select * from sct_payment UNION select * from sct_payment_archive) p, sct_entity e, sct_bundle b ";
 		query.append(s);
@@ -98,6 +98,7 @@ public class TransactionsRestServer extends BaseRestServer {
 			String where = getWhereFromParams(uriInfo.getQueryParameters());
 			query.append(" and ");
 			query.append(where);
+			totalQuery.append(" and ");
 			totalQuery.append(where);
 		}
 
@@ -109,7 +110,8 @@ public class TransactionsRestServer extends BaseRestServer {
 		query.append(pagination);
 
 		String fullQuery = query.toString();
-		LOGGER.info("Query : " + fullQuery);
+		LOGGER.info("Full query : " + fullQuery);
+		LOGGER.info("total query : " + totalQuery.toString());
 
 		// where we put results
 		List<TransactionSearchResult> list = new ArrayList<TransactionSearchResult>();
