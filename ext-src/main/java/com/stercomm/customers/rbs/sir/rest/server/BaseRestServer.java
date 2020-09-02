@@ -84,8 +84,8 @@ public class BaseRestServer {
 		 settleDate = row.getTimestamp(3).getTime();
 		 settleAmt = row.getDouble(4);
 		 type = row.getString(5);
-		 wfid = row.getInt(7);
-		 status = row.getInt(6);
+		 wfid = row.getInt(6);
+		 status = row.getInt(7);
 		 fileID=row.getString(8);
 		 docID=row.getString(9);
 		 
