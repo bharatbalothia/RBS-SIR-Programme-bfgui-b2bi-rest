@@ -15,9 +15,9 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
-import com.stercomm.customers.rbs.sir.rest.domain.Error;
-import com.stercomm.customers.rbs.sir.rest.domain.Errors;
 import com.stercomm.customers.rbs.sir.rest.domain.Event;
+import com.stercomm.customers.rbs.sir.rest.error.Error;
+import com.stercomm.customers.rbs.sir.rest.error.Errors;
 import com.sterlingcommerce.woodstock.dmi.visibility.event.DmiVisEventFactory;
 import com.sterlingcommerce.woodstock.event.ExceptionLevel;
 import com.sterlingcommerce.woodstock.event.InvalidEventException;

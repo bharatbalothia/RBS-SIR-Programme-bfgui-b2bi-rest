@@ -26,10 +26,10 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
-import com.stercomm.customers.rbs.sir.rest.domain.Error;
-import com.stercomm.customers.rbs.sir.rest.domain.Errors;
 import com.stercomm.customers.rbs.sir.rest.domain.RoutingRule;
 import com.stercomm.customers.rbs.sir.rest.domain.SWIFTRoutingRule;
+import com.stercomm.customers.rbs.sir.rest.error.Error;
+import com.stercomm.customers.rbs.sir.rest.error.Errors;
 import com.stercomm.customers.rbs.sir.rest.exception.CreateDirectoryException;
 import com.stercomm.customers.rbs.sir.rest.util.RuleSearchBy;
 import com.stercomm.customers.rbs.sir.rest.util.SRRLogs;

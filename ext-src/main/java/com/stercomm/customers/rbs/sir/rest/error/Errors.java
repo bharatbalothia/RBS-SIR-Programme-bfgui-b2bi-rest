@@ -1,4 +1,4 @@
-package com.stercomm.customers.rbs.sir.rest.domain;
+package com.stercomm.customers.rbs.sir.rest.error;
 
 import java.util.List;
 

@@ -9,6 +9,8 @@ import javax.xml.bind.annotation.XmlRootElement;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
 import org.codehaus.jackson.map.annotate.JsonSerialize.Inclusion;
 
+import com.stercomm.customers.rbs.sir.rest.error.Error;
+
 
 @XmlRootElement
 public class CertificateValidationResponse {

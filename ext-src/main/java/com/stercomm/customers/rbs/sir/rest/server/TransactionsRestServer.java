@@ -28,7 +28,7 @@ import com.sterlingcommerce.woodstock.util.frame.Manager;
 import com.sterlingcommerce.woodstock.util.frame.jdbc.Conn;
 
 @Path("/transactions")
-public class TransactionsRestServer extends BaseRestServer {
+public class TransactionsRestServer extends TransactionHandlingRestServer {
 	
 	private static Logger LOGGER = Logger.getLogger(TransactionsRestServer.class.getName());
 	private static String poolName=null;

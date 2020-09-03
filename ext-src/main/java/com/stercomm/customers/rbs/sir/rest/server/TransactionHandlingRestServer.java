@@ -1,42 +1,15 @@
 package com.stercomm.customers.rbs.sir.rest.server;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.logging.ConsoleHandler;
-import java.util.logging.FileHandler;
-import java.util.logging.Level;
-import java.util.logging.LogManager;
-import java.util.logging.Logger;
-import java.util.logging.SimpleFormatter;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
-public class BaseRestServer {
+import com.stercomm.customers.rbs.sir.rest.domain.TransactionSearchResult;
+import com.stercomm.customers.rbs.sir.rest.util.TransactionResultType;
+import com.stercomm.customers.rbs.sir.rest.util.TransactionSearchResultBuilder;
+
+public class TransactionHandlingRestServer extends BaseRestServer{
 	
-	protected static final String FORMAT_STRING = "%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS %4$s %2$s %5$s%6$s%n";
-	protected final DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-
-	protected Logger setupLogging(boolean logToConsole, String logFile) throws Exception {
-		// Setup the logging
-		System.setProperty("java.util.logging.SimpleFormatter.format", FORMAT_STRING);
-		LogManager.getLogManager().reset();
-		Logger thisLogger = Logger.getLogger(this.getClass().getName());
-		if (logFile != null) {
-			FileHandler logHandler = new FileHandler(logFile, 8 * 1024 * 1024, 2, true);
-			logHandler.setFormatter(new SimpleFormatter());
-			logHandler.setLevel(Level.FINEST);
-			thisLogger.addHandler(logHandler);
-		}
-
-		if (logToConsole) {
-			ConsoleHandler consoleHandler = new ConsoleHandler();
-			consoleHandler.setFormatter(new SimpleFormatter());
-			consoleHandler.setLevel(Level.INFO);
-			thisLogger.addHandler(consoleHandler);
-		}
-
-		thisLogger.setLevel(Level.INFO);
-		return thisLogger;
-	}
-
+	
 	/**
 	 * Create a TransactionSearchResult object from a Row
 	 * 
@@ -44,7 +17,7 @@ public class BaseRestServer {
 	 * @return
 	 * @throws SQLException
 	 */
-	/*protected TransactionSearchResult toTransactionSearchResult(ResultSet row, TransactionResultType resultType)
+	protected TransactionSearchResult toTransactionSearchResult(ResultSet row, TransactionResultType resultType)
 			throws SQLException {
 
 		// returned for summary
@@ -114,5 +87,5 @@ public class BaseRestServer {
 		}
 		return result;
 
-	}*/
+	}
 }

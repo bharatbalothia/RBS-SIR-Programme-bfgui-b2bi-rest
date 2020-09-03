@@ -21,11 +21,11 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
 
-import com.stercomm.customers.rbs.sir.rest.domain.Error;
 import com.stercomm.customers.rbs.sir.rest.domain.FileSearchResult;
 import com.stercomm.customers.rbs.sir.rest.domain.FileSearchResults;
 import com.stercomm.customers.rbs.sir.rest.domain.TransactionSearchResult;
 import com.stercomm.customers.rbs.sir.rest.domain.TransactionSearchResults;
+import com.stercomm.customers.rbs.sir.rest.error.Error;
 import com.stercomm.customers.rbs.sir.rest.util.FileSearchResultBuilder;
 import com.stercomm.customers.rbs.sir.rest.util.FileSearchWhereClauseBuilder;
 import com.stercomm.customers.rbs.sir.rest.util.TransactionResultType;
@@ -34,7 +34,7 @@ import com.sterlingcommerce.woodstock.util.frame.jdbc.Conn;
 import com.sterlingcommerce.woodstock.util.frame.jdbc.JDBCService;
 
 @Path("/files")
-public class FilesRestServer extends BaseRestServer {
+public class FilesRestServer extends TransactionHandlingRestServer {
 
 	private static Logger LOGGER = Logger.getLogger(FilesRestServer.class.getName());
 

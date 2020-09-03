@@ -21,7 +21,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
 import com.stercomm.customers.rbs.sir.rest.domain.StatsSearchResult;
-import com.stercomm.customers.rbs.sir.rest.domain.Error;
+import com.stercomm.customers.rbs.sir.rest.error.Error;
 import com.stercomm.customers.rbs.sir.rest.util.StatsResultType;
 import com.sterlingcommerce.woodstock.util.frame.Manager;
 import com.sterlingcommerce.woodstock.util.frame.jdbc.Conn;

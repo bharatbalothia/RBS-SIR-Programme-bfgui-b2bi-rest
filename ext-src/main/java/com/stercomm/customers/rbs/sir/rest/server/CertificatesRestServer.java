@@ -1,16 +1,12 @@
 package com.stercomm.customers.rbs.sir.rest.server;
 
 import java.io.File;
-import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.SignatureException;
 import java.security.cert.CertificateExpiredException;
 import java.security.cert.CertificateNotYetValidException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -22,15 +18,12 @@ import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
 import javax.security.cert.CertificateException;
-import javax.security.cert.X509Certificate;
 import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
@@ -38,9 +31,8 @@ import javax.ws.rs.core.Response.Status;
 import com.stercomm.customers.rbs.sir.rest.domain.AuthChainMember;
 import com.stercomm.customers.rbs.sir.rest.domain.Certificate;
 import com.stercomm.customers.rbs.sir.rest.domain.CertificateValidationResponse;
-import com.stercomm.customers.rbs.sir.rest.domain.Error;
-import com.stercomm.customers.rbs.sir.rest.domain.Errors;
-import com.stercomm.customers.rbs.sir.rest.domain.RoutingRule;
+import com.stercomm.customers.rbs.sir.rest.error.Error;
+import com.stercomm.customers.rbs.sir.rest.error.Errors;
 import com.sterlingcommerce.security.kcapi.CACertificateInfo;
 import com.sterlingcommerce.security.kcapi.CertificateHeldException;
 import com.sterlingcommerce.security.kcapi.CertificateInfoBase;
@@ -48,7 +40,6 @@ import com.sterlingcommerce.security.kcapi.CertificateRevokedException;
 import com.sterlingcommerce.security.kcapi.IssuerNotFoundException;
 import com.sterlingcommerce.security.kcapi.TrustedCertificateInfo;
 import com.sterlingcommerce.woodstock.util.frame.Manager;
-import com.sterlingcommerce.woodstock.util.frame.jdbc.Conn;
 
 @Path("/certificates")
 public class CertificatesRestServer extends BaseRestServer {
