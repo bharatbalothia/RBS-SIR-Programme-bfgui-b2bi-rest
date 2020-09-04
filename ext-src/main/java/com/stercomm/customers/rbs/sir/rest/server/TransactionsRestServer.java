@@ -26,12 +26,13 @@ import com.stercomm.customers.rbs.sir.rest.util.TransactionResultType;
 import com.stercomm.customers.rbs.sir.rest.util.TransactionSearchWhereClauseBuilder;
 import com.sterlingcommerce.woodstock.util.frame.Manager;
 import com.sterlingcommerce.woodstock.util.frame.jdbc.Conn;
+import com.sterlingcommerce.woodstock.util.frame.jdbc.JDBCService;
 
 @Path("/transactions")
 public class TransactionsRestServer extends TransactionHandlingRestServer {
 	
 	private static Logger LOGGER = Logger.getLogger(TransactionsRestServer.class.getName());
-	private static String poolName=null;
+
 	
 	@PostConstruct
 	private void init() {
@@ -42,7 +43,7 @@ public class TransactionsRestServer extends TransactionHandlingRestServer {
 			String fullPath = logPath + File.separator + logName;
 			LOGGER = setupLogging(logToConsole, fullPath);
 			
-			poolName=Manager.getProperties("bfgui").getProperty("file-search-pool");
+			
 
 		} catch (Exception ex) {
 			ex.printStackTrace();
@@ -53,6 +54,11 @@ public class TransactionsRestServer extends TransactionHandlingRestServer {
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
 	public Response doSearchForTransactions(@Context UriInfo uriInfo) {
+		
+		String poolName=Manager.getProperties("bfgui").getProperty("file.search.pool");
+		
+		LOGGER.info("Pool name : " + poolName);
+
 
 		Connection conn = null;
 		PreparedStatement ps = null;
@@ -117,8 +123,12 @@ public class TransactionsRestServer extends TransactionHandlingRestServer {
 		List<TransactionSearchResult> list = new ArrayList<TransactionSearchResult>();
 		TransactionSearchResults results = new TransactionSearchResults();
 		try {
-//			conn = Conn.getConnection(poolName);
-					conn = Conn.getConnection();
+			 if (null==poolName) {
+				 conn = Conn.getConnection();
+			 }
+			 else {
+				 conn = JDBCService.getConnection(poolName);
+			 }
 			ps = conn.prepareStatement(fullQuery);
 			rs = ps.executeQuery();
 
