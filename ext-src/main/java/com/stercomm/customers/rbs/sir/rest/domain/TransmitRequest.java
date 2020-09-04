@@ -13,12 +13,12 @@ public class TransmitRequest {
 	
 	@Override
 	public String toString() {
-		return "TransmitRequest [entityID=" + entity + ", fileType=" + fileType + ", username=" + username + "]";
+		return "TransmitRequest [entityID=" + entityID + ", fileType=" + fileType + ", username=" + username + "]";
 	}
 	
 	@NotNull(message = "Field cannot be null")
-	@NotEmpty(message = "Field cannot be empty")
-	private String entity;
+	@Min(value = 0,message = "Value must be < 0")
+	private Integer entityID;
 	
 	@NotNull(message = "Field cannot be null")
 	@NotEmpty(message = "Field cannot be empty")
@@ -29,11 +29,11 @@ public class TransmitRequest {
 	@NotEmpty(message = "Field cannot be empty")
 	private String username;
 	
-	public String getEntity() {
-		return entity;
+	public Integer getEntityID() {
+		return entityID;
 	}
-	public void setEntity(String entity) {
-		this.entity = entity;
+	public void setEntityID(Integer entityID) {
+		this.entityID = entityID;
 	}
 	public String getFileType() {
 		return fileType;
