@@ -2,6 +2,7 @@ package com.stercomm.customers.rbs.sir.rest.server;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 
 import com.stercomm.customers.rbs.sir.rest.domain.TransactionSearchResult;
 import com.stercomm.customers.rbs.sir.rest.util.TransactionResultType;
@@ -24,7 +25,7 @@ public class TransactionHandlingRestServer extends BaseRestServer{
 
 		int paymentID;
 		String transactionID=null;
-		long settleDate;
+		long settleDate=0L;
 		double settleAmt;
 		String type=null;
 		int wfid;
@@ -48,7 +49,10 @@ public class TransactionHandlingRestServer extends BaseRestServer{
 		
 		 paymentID = row.getInt(1);
 		 transactionID = row.getString(2);
-		 settleDate = row.getTimestamp(3).getTime();
+		 Timestamp sdTimestamp =row.getTimestamp(3); 
+		 if (null!=sdTimestamp) {
+			 settleDate = sdTimestamp.getTime();
+		 }
 		 settleAmt = row.getDouble(4);
 		 type = row.getString(5);
 		 wfid = row.getInt(6);
@@ -67,9 +71,14 @@ public class TransactionHandlingRestServer extends BaseRestServer{
 			 formattedTimestamp = df.format(new java.util.Date(timestamp));
 		}
 		
-		String formattedSettleDate = df.format(new java.util.Date(settleDate));
 		
-	
+		
+		// settlement data might be 0 here
+		String formattedSettleDate = "";	
+		if (settleDate!=0) {		
+			formattedSettleDate=df.format(new java.util.Date(settleDate));
+		}
+		
 
 		TransactionSearchResult result = null;
 

@@ -129,14 +129,20 @@ public class TransactionsRestServer extends TransactionHandlingRestServer {
 			 else {
 				 conn = JDBCService.getConnection(poolName);
 			 }
+			  
 			ps = conn.prepareStatement(fullQuery);
 			rs = ps.executeQuery();
 
+	
+				
 			while (rs.next()) {
 				TransactionSearchResult result = toTransactionSearchResult(rs, TransactionResultType.SUMMARY);
 				list.add(result);
 			}
-			results.setResults(list);
+			
+			results.setResults(list);		
+			LOGGER.info("Result count = " + results.getResults().size());
+			
 			
 			// now get the total
 			
@@ -147,7 +153,7 @@ public class TransactionsRestServer extends TransactionHandlingRestServer {
 
 			while (totalRs.next()) {
 					int k = totalRs.getInt(1);
-					LOGGER.info("Result of count : " + k);
+					LOGGER.info("Result of totalsQuery : " + k);
 					results.setTotal(k);
 			}
 			
@@ -155,7 +161,10 @@ public class TransactionsRestServer extends TransactionHandlingRestServer {
 		}
 
 		catch (Exception e) {
-			LOGGER.severe("SQL Error searching for transactions : " + e.getMessage());
+			StringBuffer ex = new StringBuffer();
+			StackTraceElement el = e.getStackTrace()[0];
+			ex.append(el.getClassName()).append(":").append(el.getMethodName()).append(" at ").append(el.getLineNumber());
+			LOGGER.severe("Error creating transactions response :  : " +ex.toString());
 
 		} finally {
 			try {
