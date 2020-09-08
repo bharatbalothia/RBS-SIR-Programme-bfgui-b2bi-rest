@@ -107,6 +107,7 @@ public class FilesRestServer extends TransactionHandlingRestServer {
 
 		// are there any query params, if so create a WHERE?
 		
+		String s = "(isoutbound=0 or isoutbound = 1) ";
 		
 		if (uriInfo.getQueryParameters().keySet().size() > 0) {
 		 String where = getWhereFromParams(uriInfo.getQueryParameters());
@@ -115,10 +116,16 @@ public class FilesRestServer extends TransactionHandlingRestServer {
 			
 			if (!uriInfo.getQueryParameters().containsKey("outbound")) {
 				// current systems screens not 0 or 1 values, so do we.
-				String s = " and (isoutbound=0 or isoutbound = 1) ";
-				dataQuery.append(s);
-				totalQuery.append(s);
+				
+				dataQuery.append(" and ").append(s);
+				totalQuery.append(" and ").append(s);
 			}
+		}else {
+			
+			// we always want to screen even if no QS
+			dataQuery.append(" where ").append(s);
+			totalQuery.append(" where ").append(s);
+			
 		}
 
 		// need to order by something
