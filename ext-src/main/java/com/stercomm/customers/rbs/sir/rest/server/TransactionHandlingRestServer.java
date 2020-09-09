@@ -59,16 +59,16 @@ public class TransactionHandlingRestServer extends BaseRestServer{
 		 status = row.getInt(7);
 		 fileID=row.getString(8);
 		 docID=row.getString(9);
+		 timestamp=row.getTimestamp(10).getTime();
+		 formattedTimestamp = df.format(new java.util.Date(timestamp));
 		 
 		if (resultType == TransactionResultType.DETAIL) {
-			 bic = row.getString(10);
-			 entity = row.getString(11);
-			 filename = row.getString(12);
-			 ref = row.getString(13);
-			 ob = row.getInt(14);
-			 service=row.getString(15);
-			 timestamp=row.getTimestamp(16).getTime();
-			 formattedTimestamp = df.format(new java.util.Date(timestamp));
+			 bic = row.getString(11);
+			 entity = row.getString(12);
+			 filename = row.getString(13);
+			 ref = row.getString(14);
+			 ob = row.getInt(15);
+			 service=row.getString(16); 
 		}
 		
 		
@@ -86,7 +86,7 @@ public class TransactionHandlingRestServer extends BaseRestServer{
 
 			result = new TransactionSearchResultBuilder(paymentID, resultType).withTransactionID(transactionID)
 					.withSettleAmount(settleAmt).withSettleDate(formattedSettleDate).withType(type).withStatus(status)
-					.withWorkflowID(wfid).withFileID(fileID).withDocID(docID).build();
+					.withWorkflowID(wfid).withFileID(fileID).withDocID(docID).withTimestamp(formattedTimestamp).build();
 		} else if (resultType == TransactionResultType.DETAIL) {
 
 			result = new TransactionSearchResultBuilder(paymentID, resultType).withTransactionID(transactionID)

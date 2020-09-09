@@ -87,7 +87,7 @@ public class TransactionSearchResult {
 	}
 
 	public TransactionSearchResult(int id, int status, String transactionID, String type,
-			  int workflowID, String settleDate, double settleAmount, String fileID, String docID) {
+			  int workflowID, String settleDate, double settleAmount, String fileID, String docID, String ts) {
 			
 		this.id = id;
 		this.status = status;	
@@ -98,19 +98,20 @@ public class TransactionSearchResult {
 		this.type = type;
 		this.fileID=fileID;
 		this.docID=docID;
+		this.timestamp=ts;
 	}
 
 	public TransactionSearchResult(int id, int status, String transactionID, String type,
 			  int workflowID, String settleDate, double settleAmount, String fileID, boolean isoutbound, String ref, String filename, String paymentBIC, String entity, String service, String timestamp, String docID) {
 			
-		this(id, status, transactionID, type, workflowID, settleDate, settleAmount, fileID, docID);
+		this(id, status, transactionID, type, workflowID, settleDate, settleAmount, fileID, docID, timestamp);
 		this.isoutbound = isoutbound;
 		this.reference  = ref;	
 		this.filename=filename;
 		this.paymentBIC=paymentBIC;
 		this.entity = entity;
 		this.service=service;
-		this.timestamp=timestamp;
+		
 		
 	}
 	

@@ -45,7 +45,7 @@ public class TransactionSearchResultBuilder {
 
 		if (rowType == TransactionResultType.SUMMARY) {
 		
-			return new TransactionSearchResult(paymentID, status, transactionID, type, workflowID, settleDate, settleAmount, fileID, docID);
+			return new TransactionSearchResult(paymentID, status, transactionID, type, workflowID, settleDate, settleAmount, fileID, docID, timestamp);
 		}
 		else {
 			
