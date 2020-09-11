@@ -90,7 +90,7 @@ public class TransactionsRestServer extends TransactionHandlingRestServer {
 		
 
 		query.append(
-				"select p.payment_id, p.transaction_id,p.settle_date,p.settle_amt,p.type,p.wf_id,p.status, p.bundle_id, p.doc_id, p.ptimestamp ");
+				"select p.payment_id, p.transaction_id,p.settle_date,p.settle_amt,p.type,p.wf_id,p.status, p.bundle_id, p.doc_id, p.ptimestamp, p.isoutbound ");
 		totalQuery.append("select count(*) ");
 		String s = "from (select * from sct_payment UNION select * from sct_payment_archive) p, sct_entity e, sct_bundle b ";
 		query.append(s);

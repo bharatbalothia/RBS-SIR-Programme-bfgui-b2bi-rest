@@ -32,6 +32,7 @@ public class TransactionSearchResultBuilder {
 	private String service;
 	private String timestamp;
 	private String docID;
+	private String direction;
 	
 	
 
@@ -45,11 +46,11 @@ public class TransactionSearchResultBuilder {
 
 		if (rowType == TransactionResultType.SUMMARY) {
 		
-			return new TransactionSearchResult(paymentID, status, transactionID, type, workflowID, settleDate, settleAmount, fileID, docID, timestamp);
+			return new TransactionSearchResult(paymentID, status, transactionID, type, workflowID, settleDate, settleAmount, fileID, docID, timestamp, isoutbound, direction);
 		}
 		else {
 			
-			return new TransactionSearchResult(paymentID, status, transactionID, type, workflowID, settleDate, settleAmount, fileID, isoutbound, ref, filename, paymentBIC, entity, service, timestamp, docID);
+			return new TransactionSearchResult(paymentID, status, transactionID, type, workflowID, settleDate, settleAmount, fileID,  ref, filename, paymentBIC, entity, service, timestamp, docID, isoutbound, direction);
 		}
 	}
 	 
@@ -113,7 +114,27 @@ public class TransactionSearchResultBuilder {
 		return this;
 	}
 	
-	
+	public TransactionSearchResultBuilder withDirection(int isob) {
+		
+
+		if (isob==0) {
+			
+			this.direction = "inbound";
+		}
+		else if (isob==1){
+			
+			this.direction = "outbound";
+		}
+		else if (isob==2){
+			this.direction = "payaway";
+			
+		} else {
+			
+			this.direction = "";
+		}
+
+		return this;
+	}
 
 	public TransactionSearchResultBuilder withStatus(int status) {
 

@@ -31,17 +31,18 @@ public class TransactionHandlingRestServer extends BaseRestServer{
 		int wfid;
 		int status;
 		String fileID;
+		int ob = 0;
 		
 		// returned for detail only (in addition to summary)
 		String bic=null;
 		String entity=null;
 		String filename=null;
 		String ref=null;
-		int ob = 0;
 		String service=null;
 		long timestamp;
 		String formattedTimestamp=null;
 		String docID;
+		String direction;
 		
 		
 		// p.payment_id, p.TRANSACTION_ID, p.SETTLE_DATE, p.SETTLE_AMT, 
@@ -61,13 +62,13 @@ public class TransactionHandlingRestServer extends BaseRestServer{
 		 docID=row.getString(9);
 		 timestamp=row.getTimestamp(10).getTime();
 		 formattedTimestamp = df.format(new java.util.Date(timestamp));
+		 ob = row.getInt(11);
 		 
 		if (resultType == TransactionResultType.DETAIL) {
-			 bic = row.getString(11);
-			 entity = row.getString(12);
-			 filename = row.getString(13);
-			 ref = row.getString(14);
-			 ob = row.getInt(15);
+			 bic = row.getString(12);
+			 entity = row.getString(13);
+			 filename = row.getString(14);
+			 ref = row.getString(15);			 
 			 service=row.getString(16); 
 		}
 		
@@ -86,13 +87,13 @@ public class TransactionHandlingRestServer extends BaseRestServer{
 
 			result = new TransactionSearchResultBuilder(paymentID, resultType).withTransactionID(transactionID)
 					.withSettleAmount(settleAmt).withSettleDate(formattedSettleDate).withType(type).withStatus(status)
-					.withWorkflowID(wfid).withFileID(fileID).withDocID(docID).withTimestamp(formattedTimestamp).build();
+					.withWorkflowID(wfid).withFileID(fileID).withDocID(docID).withTimestamp(formattedTimestamp).withIsoutbound(ob == 1 ? true : false).withDirection(ob).build();
 		} else if (resultType == TransactionResultType.DETAIL) {
 
 			result = new TransactionSearchResultBuilder(paymentID, resultType).withTransactionID(transactionID)
 					.withSettleAmount(settleAmt).withSettleDate(formattedSettleDate).withType(type).withStatus(status)
 					.withWorkflowID(wfid).withEntity(entity).withPaymentBIC(bic).withFilename(filename)
-					.withReference(ref).withIsoutbound(ob == 1 ? true : false).withFileID(fileID).withService(service).withTimestamp(formattedTimestamp).withDocID(docID).build();
+					.withReference(ref).withFileID(fileID).withService(service).withTimestamp(formattedTimestamp).withDocID(docID).withIsoutbound(ob == 1 ? true : false).withDirection(ob).build();
 		}
 		return result;
 
